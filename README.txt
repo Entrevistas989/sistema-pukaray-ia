@@ -1,14 +1,15 @@
-# Sistema Pukaray IA v9 - Redactor Institucional
+# Sistema Pukaray IA v10.1
 
-Subir a GitHub:
+Corrige:
+- Reincorpora botones Limpiar datos y Salir.
+- Mantiene corrección de RICE.
+- Mantiene texto ordenado para Word.
+- Evita que aparezcan \n visibles en el documento.
+
+Subir/reemplazar en GitHub:
 - app.py
 - redactor_institucional.py
 - motor_rice.py
 - requirements.txt
 - base_datos_pukaray.xlsx
 - plantilla_ficha_entrevista_apoderado.docx
-
-Nuevo:
-- Mejora automáticamente los antecedentes breves.
-- Guarda antecedentes originales y mejorados.
-- Usa texto mejorado en el Word.

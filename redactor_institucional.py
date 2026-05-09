@@ -1,54 +1,58 @@
+import unicodedata
+
+def normalizar_texto(texto):
+    texto = str(texto or "").lower()
+    texto = unicodedata.normalize("NFD", texto)
+    texto = "".join(ch for ch in texto if unicodedata.category(ch) != "Mn")
+    return texto
 
 def mejorar_antecedentes(texto):
     texto_original = (texto or "").strip()
-    t = texto_original.lower()
+    t = normalizar_texto(texto_original)
 
     if not texto_original:
         return "No se registran antecedentes específicos en el campo de relato breve."
 
     frases = []
 
+    if any(p in t for p in ["pego", "pega", "golpea", "golpe", "agrede", "agresion", "patada", "empuja", "zancadilla"]):
+        frases.append(
+            "Se registran antecedentes asociados a una interacción física inadecuada hacia otro estudiante, "
+            "situación que requiere ser abordada desde el enfoque formativo, resguardando la integridad de los involucrados "
+            "y promoviendo la reparación del daño causado."
+        )
+
+    if any(p in t for p in ["insulto", "insulta", "garabato", "groseria", "ofende", "amenaza", "hiriente"]):
+        frases.append(
+            "Asimismo, se informa el uso de lenguaje verbal inadecuado u ofensivo hacia un compañero, "
+            "lo que resulta contrario a las normas de respeto y buen trato promovidas por la comunidad educativa."
+        )
+
     if any(p in t for p in ["interrumpe", "interrupciones", "molesta", "disruptiv", "grita", "ruidos", "no deja hacer clase"]):
         frases.append(
-            "Se registran antecedentes asociados a conductas disruptivas durante el desarrollo de la clase, "
-            "las que interfieren en el adecuado ambiente pedagógico y dificultan la continuidad de las actividades escolares."
+            "Se observan conductas disruptivas durante el desarrollo de la clase, las que interfieren en el adecuado ambiente pedagógico "
+            "y dificultan la continuidad de las actividades escolares."
         )
 
-    if any(p in t for p in ["desafiante", "desafía", "desafia", "responde mal", "no obedece", "no sigue instrucciones", "se niega"]):
+    if any(p in t for p in ["desafiante", "desafia", "responde mal", "no obedece", "no sigue instrucciones", "se niega"]):
         frases.append(
-            "Asimismo, se observan dificultades para acatar instrucciones y responder adecuadamente a las indicaciones entregadas por los adultos responsables."
+            "También se advierten dificultades para acatar instrucciones y responder adecuadamente a las indicaciones entregadas por los adultos responsables."
         )
 
-    if any(p in t for p in ["burla", "burlas", "burlesco", "apodo", "sobrenombre", "molesta compañeros", "se rie", "se ríe"]):
+    if any(p in t for p in ["burla", "burlas", "burlesco", "apodo", "sobrenombre", "se rie"]):
         frases.append(
-            "Se consignan además actitudes burlescas o verbalizaciones inadecuadas hacia integrantes del grupo curso, "
-            "situación que puede afectar la convivencia escolar y el bienestar socioemocional de los estudiantes involucrados."
+            "Se consignan actitudes burlescas o verbalizaciones inadecuadas hacia integrantes del grupo curso, situación que puede afectar la convivencia escolar."
         )
 
-    if any(p in t for p in ["pega", "golpea", "golpe", "agrede", "agresión", "agresion", "patada", "empuja", "zancadilla"]):
-        frases.append(
-            "Se describen antecedentes vinculados a una interacción física inadecuada con otro estudiante, "
-            "situación que requiere abordaje formativo, resguardo de los involucrados y seguimiento por parte del establecimiento."
-        )
-
-    if any(p in t for p in ["insulta", "garabato", "grosería", "groseria", "ofende", "amenaza"]):
-        frases.append(
-            "También se reporta uso de lenguaje verbal inadecuado u ofensivo, aspecto que resulta contrario a las normas de respeto promovidas por la comunidad educativa."
-        )
-
-    if any(p in t for p in ["reiterado", "reiterada", "varias veces", "constantemente", "frecuentemente", "siempre", "muchas anotaciones", "anotaciones"]):
+    if any(p in t for p in ["reiterado", "reiterada", "varias veces", "constantemente", "frecuentemente", "siempre", "anotaciones"]):
         frases.append(
             "Los antecedentes señalan reiteración de la conducta, por lo que se estima necesario fortalecer las estrategias de seguimiento y acompañamiento institucional."
         )
 
     if not frases:
-        return (
-            "Se informa situación referida al proceso formativo y de convivencia escolar del estudiante, "
-            "la cual requiere ser abordada mediante entrevista, análisis de antecedentes y seguimiento institucional. "
-            f"Antecedente entregado por el funcionario: {texto_original}"
+        frases.append(
+            "Se informa una situación asociada al proceso formativo y de convivencia escolar del estudiante, la cual requiere entrevista, análisis de antecedentes y seguimiento institucional."
         )
+        frases.append(f"Antecedente entregado por el funcionario: {texto_original}")
 
-    return " ".join(frases) + (
-        " Estos antecedentes se presentan para conocimiento del apoderado, con el propósito de establecer acuerdos de apoyo, "
-        "acompañamiento y mejora del proceso formativo del estudiante."
-    )
+    return "\n\n".join(frases)
