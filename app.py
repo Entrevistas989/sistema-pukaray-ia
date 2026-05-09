@@ -32,7 +32,7 @@ def limpiar_para_word(texto):
     return str(texto or "").replace("\\n", "\n").replace("\\t", "\t")
 
 def limpiar_datos():
-    st.session_state.clear()
+    st.session_state["reset_form"] = st.session_state.get("reset_form", 0) + 1
     st.rerun()
     for clave in claves:
         if clave in st.session_state:
@@ -191,11 +191,11 @@ entrevistadores = leer_hoja("Entrevistadores")
 responsables = leer_hoja("Responsables_Apoyo")
 
 cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
-curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, key="curso_sel")
+curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, index=0, key=f"curso_sel_{reset_form}")
 
 estudiantes_filtrados = [e for e in estudiantes if curso_sel != "Seleccione curso" and normalizar(e.get("Curso", "")) == normalizar(curso_sel)]
 nombres_estudiantes = [str(e.get("Nombre Estudiante", "")).strip() for e in estudiantes_filtrados]
-estudiante_sel = st.selectbox("Estudiante", ["Seleccione estudiante"] + nombres_estudiantes)
+estudiante_sel = st.selectbox("Estudiante",["Seleccione estudiante"] + nombres_estudiantes,index=0,key=f"estudiante_sel_{reset_form}_{normalizar(curso_sel)}")
 estudiante = next((e for e in estudiantes_filtrados if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel), {})
 
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY")
