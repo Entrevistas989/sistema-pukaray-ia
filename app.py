@@ -191,6 +191,7 @@ entrevistadores = leer_hoja("Entrevistadores")
 responsables = leer_hoja("Responsables_Apoyo")
 
 cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
+reset_form = st.session_state.get("reset_form", 0)
 curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, index=0, key=f"curso_sel_{reset_form}")
 
 estudiantes_filtrados = [e for e in estudiantes if curso_sel != "Seleccione curso" and normalizar(e.get("Curso", "")) == normalizar(curso_sel)]
