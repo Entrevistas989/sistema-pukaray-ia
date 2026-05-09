@@ -32,7 +32,7 @@ def limpiar_para_word(texto):
     return str(texto or "").replace("\\n", "\n").replace("\\t", "\t")
 
 def limpiar_datos():
-   st.session_state.clear()
+    st.session_state.clear()
     st.rerun()
     for clave in claves:
         if clave in st.session_state:
