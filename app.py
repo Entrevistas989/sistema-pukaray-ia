@@ -32,11 +32,8 @@ def limpiar_para_word(texto):
     return str(texto or "").replace("\\n", "\n").replace("\\t", "\t")
 
 def limpiar_datos():
-    claves = [
-        "hora_entrevista", "numero_entrevista", "apoderado_nombre", "apoderado_relacion",
-        "apoderado_telefono", "apoderado_correo", "tipo_apoyo_extra", "antecedentes",
-        "asiste_apoderado", "asiste_estudiante", "mejorar_texto", "incluir_rice"
-    ]
+   st.session_state.clear()
+    st.rerun()
     for clave in claves:
         if clave in st.session_state:
             del st.session_state[clave]
