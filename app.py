@@ -246,8 +246,7 @@ else:
     if "Nombre Estudiante" in df.columns:
         st.bar_chart(df["Nombre Estudiante"].value_counts().head(10))
 
-        st.bar_chart(top_estudiantes)
-
+        
 st.subheader("Funcionarios que registran entrevistas")
 
 if "Nombre Funcionario" in df.columns:
