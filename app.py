@@ -506,7 +506,15 @@ else:
 
 st.divider()
 st.subheader("Datos de la entrevista")
-
+tipo_registro = st.selectbox(
+    "Tipo de registro",
+    [
+        "Entrevista participante",
+        "Atención estudiante",
+        "Atención funcionario"
+    ],
+    key=f"tipo_registro_{reset_form}"
+)
 fecha = st.date_input(
     "Fecha entrevista",
     value=date.today(),
