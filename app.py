@@ -108,7 +108,7 @@ def resumen_personas(registros, nombre_key, cargo_key, depto_key=None, apoyo_key
     }
 
 def redactar_textos(antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
-    motivo = "Se realiza entrevista de apoderado con el propósito de informar antecedentes asociados al proceso formativo y de convivencia escolar del estudiante.\n\nANTECEDENTES INFORMADOS:\n" + antecedentes_mejorados
+    motivo = "Se realiza entrevista de persona entrevistada con el propósito de informar antecedentes asociados al proceso formativo y de convivencia escolar del estudiante.\n\nANTECEDENTES INFORMADOS:\n" + antecedentes_mejorados
     analisis = ["ANÁLISIS INSTITUCIONAL",
         "1. Los antecedentes descritos evidencian una situación que requiere abordaje formativo, resguardo de la convivencia escolar y coordinación con la familia.",
         "2. Se recomienda fortalecer la reflexión del estudiante respecto de sus acciones, promoviendo la reparación del daño y el cumplimiento de las normas institucionales.",
@@ -117,7 +117,7 @@ def redactar_textos(antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice
     analisis.append("4. Normas posiblemente asociadas:")
     analisis += [f"   • {x}" for x in rice.get("normas", [])]
     acuerdos = ["ACUERDOS Y CONCLUSIONES",
-        "1. El apoderado toma conocimiento formal de los antecedentes expuestos durante la entrevista.",
+        "1. El persona entrevistada toma conocimiento formal de los antecedentes expuestos durante la entrevista.",
         "2. Se acuerda reforzar desde el hogar normas de respeto, buen trato y resolución adecuada de conflictos.",
         "3. El establecimiento realizará seguimiento institucional del caso."]
     if responsables_apoyo:
@@ -145,7 +145,7 @@ def completar_plantilla(datos, motivo, analisis, acuerdos):
     put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
     put(doc.tables[3].cell(0, 1), datos["departamentos"])
     put(doc.tables[3].cell(0, 5), datos["numero_entrevista"])
-    put(doc.tables[3].cell(1, 1 if datos["asiste_apoderado"] == "Sí" else 2), " X")
+    put(doc.tables[3].cell(1, 1 if datos["asiste_persona entrevistada"] == "Sí" else 2), " X")
     put(doc.tables[3].cell(1, 5 if datos["asiste_estudiante"] == "Sí" else 6), " X")
     put(doc.tables[4].cell(0, 1), motivo)
     put(doc.tables[5].cell(0, 1), f"{analisis}\n\n{acuerdos}")
@@ -384,10 +384,8 @@ if Path(DB_PATH).exists():
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
 hora = st.text_input("Hora entrevista", placeholder="Ej: 17:00 hrs", key=f"hora_{reset_form}")
 numero_entrevista = st.text_input("Número entrevista", placeholder="Ej: 001-2026", key=f"numero_{reset_form}")
-apoderado_nombre = st.text_input("Persona entrevistada", key=f"apoderado_nombre_{reset_form}")
-apoderado_relacion = st.text_input("Relación con estudiante", key=f"apoderado_relacion_{reset_form}")
-apoderado_telefono = st.text_input("Teléfono apoderado", key=f"apoderado_telefono_{reset_form}")
-apoderado_correo = st.text_input("Correo apoderado", key=f"apoderado_correo_{reset_form}")
+persona_entrevistada = st.text_input("Persona entrevistada", key=f"persona_entrevistada_{reset_form}")
+vinculo_persona = st.text_input("Relación con estudiante", key=f"vinculo_persona_{reset_form}")
 
 nombres_entrevistadores = [e.get("Nombre Entrevistador", "") for e in entrevistadores if e.get("Nombre Entrevistador")]
 entrevistadores_sel = st.multiselect("Entrevistadores participantes", nombres_entrevistadores, default=nombres_entrevistadores[:1], key=f"entrevistadores_{reset_form}")
@@ -398,7 +396,7 @@ responsables_sel = st.multiselect("Responsables a cargo de ejecutar apoyos", nom
 resumen_resp = resumen_personas([r for r in responsables if r.get("Nombre Responsable") in responsables_sel], "Nombre Responsable", "Cargo/Rol", "Área", "Tipo de Apoyo")
 
 tipo_apoyo_extra = st.text_area("Ajuste o detalle del apoyo a ejecutar", value=resumen_resp["apoyos"], height=110, key=f"tipo_apoyo_{reset_form}")
-asiste_apoderado = st.selectbox("Asiste apoderado", ["Sí", "No"], key=f"asiste_apoderado_{reset_form}")
+asiste_persona entrevistada = st.selectbox("Asiste persona entrevistada", ["Sí", "No"], key=f"asiste_persona entrevistada_{reset_form}")
 asiste_estudiante = st.selectbox("Asiste estudiante", ["No", "Sí"], key=f"asiste_estudiante_{reset_form}")
 antecedentes = st.text_area("Antecedentes breves del caso", height=160, placeholder="Ej: le pegó a otro compañero y lo insultó", key=f"antecedentes_{reset_form}")
 mejorar_texto = st.checkbox("Mejorar automáticamente la redacción institucional", value=True, key=f"mejorar_texto_{reset_form}")
@@ -413,8 +411,8 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
         rice = analizar_rice(f"{antecedentes} {antecedentes_mejorados}", contar_intervenciones_previas(nombre_estudiante)) if incluir_rice else {"categoria":["No solicitado"],"normas":["No solicitado"],"medidas":[],"alertas":[],"gravedad":"BAJA"}
         motivo, analisis, acuerdos = redactar_textos(antecedentes_mejorados, resumen_resp["nombres"], tipo_apoyo_extra, rice)
         nombre_archivo = f"{limpiar_nombre_archivo(nombre_estudiante)}_{limpiar_nombre_archivo(curso)}_{fecha.strftime('%d-%m-%Y')}.docx"
-        archivo = completar_plantilla({"nombre_estudiante":nombre_estudiante,"curso":curso,"fecha":fecha.strftime("%d.%m.%Y"),"hora":hora,"entrevistadores":resumen_ent["nombres"],"cargos_entrevistadores":resumen_ent["cargos"],"departamentos":resumen_ent["deptos"],"numero_entrevista":numero_entrevista,"asiste_apoderado":asiste_apoderado,"asiste_estudiante":asiste_estudiante}, motivo, analisis, acuerdos)
+        archivo = completar_plantilla({"nombre_estudiante":nombre_estudiante,"curso":curso,"fecha":fecha.strftime("%d.%m.%Y"),"hora":hora,"entrevistadores":resumen_ent["nombres"],"cargos_entrevistadores":resumen_ent["cargos"],"departamentos":resumen_ent["deptos"],"numero_entrevista":numero_entrevista,"asiste_persona entrevistada":asiste_persona entrevistada,"asiste_estudiante":asiste_estudiante}, motivo, analisis, acuerdos)
         ahora = datetime.now()
-        registrar({"fecha_registro":ahora.strftime("%d.%m.%Y"),"hora_registro":ahora.strftime("%H:%M:%S"),"usuario_sistema":st.session_state.get("usuario_id"),"nombre_funcionario":st.session_state.get("usuario_nombre"),"cargo_funcionario":st.session_state.get("usuario_cargo"),"curso":curso,"nombre_estudiante":nombre_estudiante,"run":run,"nombre_apoderado":apoderado_nombre,"relacion_apoderado":apoderado_relacion,"telefono_apoderado":apoderado_telefono,"correo_apoderado":apoderado_correo,"entrevistadores":resumen_ent["nombres"],"cargos_entrevistadores":resumen_ent["cargos"],"departamentos":resumen_ent["deptos"],"responsables_apoyo":resumen_resp["nombres"],"roles_responsables":resumen_resp["cargos"],"tipos_apoyo":tipo_apoyo_extra,"asiste_apoderado":asiste_apoderado,"asiste_estudiante":asiste_estudiante,"antecedentes_originales":antecedentes,"antecedentes_mejorados":antecedentes_mejorados,"motivo":motivo,"analisis":analisis,"acuerdos":acuerdos,"categoria_rice":"\n".join(rice.get("categoria", [])),"normas_rice":"\n".join(rice.get("normas", [])),"medidas_rice":"\n".join(rice.get("medidas", [])),"alertas_rice":"\n".join(rice.get("alertas", [])),"gravedad":rice.get("gravedad","BAJA"),"archivo_generado":nombre_archivo,"numero_entrevista":numero_entrevista})
+        registrar({"fecha_registro":ahora.strftime("%d.%m.%Y"),"hora_registro":ahora.strftime("%H:%M:%S"),"usuario_sistema":st.session_state.get("usuario_id"),"nombre_funcionario":st.session_state.get("usuario_nombre"),"cargo_funcionario":st.session_state.get("usuario_cargo"),"curso":curso,"nombre_estudiante":nombre_estudiante,"run":run,"nombre_persona entrevistada":persona entrevistada_nombre,"relacion_persona entrevistada":persona entrevistada_relacion,"telefono_apoderado":apoderado_telefono,"correo_apoderado":apoderado_correo,"entrevistadores":resumen_ent["nombres"],"cargos_entrevistadores":resumen_ent["cargos"],"departamentos":resumen_ent["deptos"],"responsables_apoyo":resumen_resp["nombres"],"roles_responsables":resumen_resp["cargos"],"tipos_apoyo":tipo_apoyo_extra,"asiste_apoderado":asiste_apoderado,"asiste_estudiante":asiste_estudiante,"antecedentes_originales":antecedentes,"antecedentes_mejorados":antecedentes_mejorados,"motivo":motivo,"analisis":analisis,"acuerdos":acuerdos,"categoria_rice":"\n".join(rice.get("categoria", [])),"normas_rice":"\n".join(rice.get("normas", [])),"medidas_rice":"\n".join(rice.get("medidas", [])),"alertas_rice":"\n".join(rice.get("alertas", [])),"gravedad":rice.get("gravedad","BAJA"),"archivo_generado":nombre_archivo,"numero_entrevista":numero_entrevista})
         st.success("Documento generado y seguimiento registrado correctamente.")
         st.download_button("Descargar Word listo para imprimir", archivo, file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
