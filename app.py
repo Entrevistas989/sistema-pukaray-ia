@@ -168,8 +168,8 @@ def registrar(registro):
     wb.save(DB_PATH)
 
 if st.session_state.get("salir"):
-   LOGO_PATH = "logo_pukaray.png"
-    st.image(LOGO_PATH, width=150)
+LOGO_PATH = "logo_pukaray.png"
+st.image(LOGO_PATH, width=150)
     st.title("Sistema Pukaray IA")
     st.success("Sesión cerrada en este equipo.")
     st.write("Puede cerrar esta pestaña del navegador.")
