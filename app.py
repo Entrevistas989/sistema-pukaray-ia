@@ -15,7 +15,7 @@ TEMPLATE_PATH = "plantilla_ficha_entrevista_apoderado.docx"
 DB_PATH = "base_datos_pukaray.xlsx"
 
 st.set_page_config(page_title="Sistema Pukaray IA", page_icon="📄", layout="centered")
-LOGO_PATH = "logo_pukaray.png"
+ LOGO_PATH = "logo_pukaray.png"
 def normalizar(texto):
     texto = str(texto or "").strip()
     texto = unicodedata.normalize("NFD", texto)
@@ -168,8 +168,8 @@ def registrar(registro):
     wb.save(DB_PATH)
 
 if st.session_state.get("salir"):
-LOGO_PATH = "logo_pukaray.png"
-st.image(LOGO_PATH, width=150)
+ LOGO_PATH = "logo_pukaray.png"
+    st.image(LOGO_PATH, width=150)
     st.title("Sistema Pukaray IA")
     st.success("Sesión cerrada en este equipo.")
     st.write("Puede cerrar esta pestaña del navegador.")
