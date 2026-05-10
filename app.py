@@ -159,6 +159,8 @@ def registrar(registro):
 
 col1, col2 = st.columns([2, 1])
 with col1:
+    if Path("logo_pukaray.png").exists():
+        st.image("logo_pukaray.png", width=120)
     st.markdown("""<div style="background-color:#f5f3eb;border-left:8px solid #1a542a;padding:16px;border-radius:10px;"><h2 style="margin:0;color:#1a542a;">Sistema Pukaray IA</h2><p style="margin:4px 0 0 0;color:#6b1e11;">Entrevistas · RICE · Seguimiento institucional</p></div>""", unsafe_allow_html=True)
     st.caption(f"Usuario conectado: {st.session_state.get('usuario_nombre')} · {st.session_state.get('usuario_cargo')}")
 with col2:
