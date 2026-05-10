@@ -312,20 +312,48 @@ else:
             use_container_width=True
         )
 
+st.subheader("Historial del estudiante")
+
+df_historial = cargar_historial_dataframe()
+
 if estudiante_sel == "Seleccione estudiante":
     st.info("Seleccione un estudiante para ver su historial.")
-elif not historial_estudiante:
-    st.info("No existen intervenciones previas registradas para este estudiante.")
+
+elif df_historial.empty:
+    st.info("No existen intervenciones registradas.")
+
 else:
-    for h in historial_estudiante:
-        with st.expander(f"{h.get('Fecha Registro', '')} - {h.get('Gravedad', '')}"):
-            st.write(f"**Curso:** {h.get('Curso', '')}")
-            st.write(f"**Funcionario:** {h.get('Nombre Funcionario', '')}")
-            st.write(f"**Antecedentes:** {h.get('Antecedentes Mejorados', '')}")
-            st.write(f"**Categoría RICE:** {h.get('Categoría RICE', '')}")
-            st.write(f"**Normas RICE:** {h.get('Normas RICE', '')}")
-            st.write(f"**Medidas:** {h.get('Medidas RICE', '')}")
-            st.write(f"**Archivo:** {h.get('Archivo Generado', '')}")
+
+    df_estudiante = df_historial[
+        df_historial["Nombre Estudiante"].fillna("").str.strip().str.lower()
+        == str(estudiante_sel).strip().lower()
+    ]
+
+    if df_estudiante.empty:
+        st.info("No existen intervenciones previas registradas para este estudiante.")
+
+    else:
+
+        columnas_mostrar = [
+            "Fecha Registro",
+            "Hora Registro",
+            "Curso",
+            "Nombre Estudiante",
+            "Gravedad",
+            "Categoría RICE",
+            "Medidas RICE",
+            "Archivo Generado"
+        ]
+
+        columnas_mostrar = [
+            c for c in columnas_mostrar
+            if c in df_estudiante.columns
+        ]
+
+        st.dataframe(
+            df_estudiante[columnas_mostrar],
+            use_container_width=True
+        )
 estudiante = next((e for e in estudiantes_filtrados if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel), {})
 
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
