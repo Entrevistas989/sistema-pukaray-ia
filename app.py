@@ -384,7 +384,7 @@ if Path(DB_PATH).exists():
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
 hora = st.text_input("Hora entrevista", placeholder="Ej: 17:00 hrs", key=f"hora_{reset_form}")
 numero_entrevista = st.text_input("Número entrevista", placeholder="Ej: 001-2026", key=f"numero_{reset_form}")
-apoderado_nombre = st.text_input("Nombre apoderado entrevistado", key=f"apoderado_nombre_{reset_form}")
+apoderado_nombre = st.text_input("Persona entrevistada", key=f"apoderado_nombre_{reset_form}")
 apoderado_relacion = st.text_input("Relación con estudiante", key=f"apoderado_relacion_{reset_form}")
 apoderado_telefono = st.text_input("Teléfono apoderado", key=f"apoderado_telefono_{reset_form}")
 apoderado_correo = st.text_input("Correo apoderado", key=f"apoderado_correo_{reset_form}")
