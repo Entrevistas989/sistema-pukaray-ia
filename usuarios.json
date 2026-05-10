@@ -1,0 +1,32 @@
+{
+    "wtobar": {
+        "nombre": "William Tobar",
+        "password": "Wt2026",
+        "cargo": "Convivencia Escolar",
+        "permisos": [
+            "crear",
+            "editar",
+            "ver_historial",
+            "estadisticas",
+            "administrar"
+        ]
+    },
+
+    "scanales": {
+        "nombre": "Sandra Canales",
+        "password": "Sc2026",
+        "cargo": "Profesora Jefe",
+        "permisos": [
+            "crear",
+        ]
+    },
+
+    "cvasquez": {
+        "nombre": "Claudia Vásquez",
+        "password": "Cv2026",
+        "cargo": "Profesora",
+        "permisos": [
+            "crear"
+        ]
+    }
+}
