@@ -264,13 +264,13 @@ else:
 
         st.bar_chart(top_estudiantes)
 
-    st.subheader("Funcionarios que registran entrevistas")
+st.subheader("Funcionarios que registran entrevistas")
 
-    if "Nombre Funcionario" in df.columns:
-        st.bar_chart(
-            df["Nombre Funcionario"].value_counts()
-        )
-historial = cargar_historial()
+if "Nombre Funcionario" in df.columns:
+    st.bar_chart(df["Nombre Funcionario"].value_counts())
+else:
+    st.info("No existe la columna Nombre Funcionario en la base de datos.")
+historial = cargar_historial_dataframe()
 
 historial_estudiante = [
     h for h in historial
