@@ -219,11 +219,8 @@ st.header("Estadísticas institucionales")
 df = cargar_historial_dataframe()
 
 if df.empty:
-
     st.info("Aún no existen registros para estadísticas.")
-
 else:
-
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -231,36 +228,23 @@ else:
 
     with col2:
         if "Nombre Estudiante" in df.columns:
-            st.metric(
-                "Estudiantes intervenidos",
-                df["Nombre Estudiante"].nunique()
-            )
+            st.metric("Estudiantes intervenidos", df["Nombre Estudiante"].nunique())
 
     with col3:
         if "Curso" in df.columns:
-            st.metric(
-                "Cursos con registros",
-                df["Curso"].nunique()
-            )
+            st.metric("Cursos con registros", df["Curso"].nunique())
 
     st.subheader("Intervenciones por curso")
-
     if "Curso" in df.columns:
         st.bar_chart(df["Curso"].value_counts())
 
     st.subheader("Intervenciones por gravedad")
-
     if "Gravedad" in df.columns:
         st.bar_chart(df["Gravedad"].value_counts())
 
     st.subheader("Estudiantes con más intervenciones")
-
     if "Nombre Estudiante" in df.columns:
-        top_estudiantes = (
-            df["Nombre Estudiante"]
-            .value_counts()
-            .head(10)
-        )
+        st.bar_chart(df["Nombre Estudiante"].value_counts().head(10))
 
         st.bar_chart(top_estudiantes)
 
