@@ -15,7 +15,7 @@ TEMPLATE_PATH = "plantilla_ficha_entrevista_apoderado.docx"
 DB_PATH = "base_datos_pukaray.xlsx"
 
 st.set_page_config(page_title="Sistema Pukaray IA", page_icon="📄", layout="centered")
- LOGO_PATH = "logo_pukaray.png"
+LOGO_PATH = "logo_pukaray.png"
 def normalizar(texto):
     texto = str(texto or "").strip()
     texto = unicodedata.normalize("NFD", texto)
