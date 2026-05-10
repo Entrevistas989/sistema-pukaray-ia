@@ -21,6 +21,8 @@ def cargar_usuarios():
         return json.load(f)
 
 def pantalla_login():
+    if Path("logo_pukaray.png").exists():
+        st.image("logo_pukaray.png", width=160)  
     st.markdown("""
     <div style="background-color:#1a542a;padding:22px;border-radius:14px;margin-bottom:20px;">
         <h1 style="color:white;text-align:center;margin:0;">Sistema Pukaray IA</h1>
