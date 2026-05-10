@@ -560,7 +560,7 @@ nombres_entrevistadores = [
 entrevistadores_sel = st.multiselect(
     "Entrevistadores participantes",
     nombres_entrevistadores,
-    default=nombres_entrevistadores[:1],
+    default=[],
     key=f"entrevistadores_{reset_form}"
 )
 
@@ -581,7 +581,7 @@ nombres_responsables = [
 responsables_sel = st.multiselect(
     "Responsables a cargo de ejecutar apoyos",
     nombres_responsables,
-    default=nombres_responsables[:1],
+    default=[],
     key=f"responsables_{reset_form}"
 )
 
