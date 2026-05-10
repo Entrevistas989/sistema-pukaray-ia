@@ -535,10 +535,59 @@ numero_entrevista = st.text_input(
     key=f"numero_{reset_form}"
 )
 
-participante_entrevista = st.text_input(
-    "Participante de la entrevista",
-    key=f"participante_entrevista_{reset_form}"
-)
+if tipo_registro == "Entrevista participante":
+
+    participante_entrevista = st.text_input(
+        "Participante de la entrevista",
+        key=f"participante_entrevista_{reset_form}"
+    )
+
+    vinculo_persona = st.text_input(
+        "Vínculo con el estudiante",
+        key=f"vinculo_persona_{reset_form}"
+    )
+
+    asiste_participante = st.selectbox(
+        "Asiste participante de la entrevista",
+        ["Sí", "No"],
+        key=f"asiste_participante_{reset_form}"
+    )
+
+    asiste_estudiante = st.selectbox(
+        "Asiste estudiante",
+        ["No", "Sí"],
+        key=f"asiste_estudiante_{reset_form}"
+    )
+
+elif tipo_registro == "Atención estudiante":
+
+    participante_entrevista = estudiante_sel
+
+    vinculo_persona = "Estudiante"
+
+    asiste_participante = "Sí"
+
+    asiste_estudiante = "Sí"
+
+    st.info("Registro de atención individual de estudiante.")
+
+elif tipo_registro == "Atención funcionario":
+
+    participante_entrevista = st.text_input(
+        "Nombre funcionario atendido",
+        key=f"funcionario_atendido_{reset_form}"
+    )
+
+    vinculo_persona = st.text_input(
+        "Cargo o función",
+        key=f"cargo_funcionario_{reset_form}"
+    )
+
+    asiste_participante = "Sí"
+
+    asiste_estudiante = "No"
+
+    st.info("Registro de atención individual de funcionario.")
 
 vinculo_persona = st.text_input(
     "Vínculo con el estudiante",
