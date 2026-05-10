@@ -175,14 +175,20 @@ if "crear" not in st.session_state.get("usuario_permisos", []):
 reset_form = st.session_state.get("reset_form", 0)
 estudiantes, entrevistadores, responsables = leer_hoja("Estudiantes"), leer_hoja("Entrevistadores"), leer_hoja("Responsables_Apoyo")
 
+
 def cargar_historial_dataframe():
+    wb = load_workbook(DB_PATH, data_only=True)
+    ws = wb["Seguimiento_Intervenciones"]
 
-    historial = cargar_historial()
+    filas = list(ws.iter_rows(values_only=True))
 
-    if not historial:
+    if len(filas) <= 1:
         return pd.DataFrame()
 
-    return pd.DataFrame(historial)
+    encabezados = [str(x or "") for x in filas[0]]
+    datos = filas[1:]
+
+    return pd.DataFrame(datos, columns=encabezados)
     wb = load_workbook(DB_PATH, data_only=True)
     ws = wb["Seguimiento_Intervenciones"]
 
