@@ -2,7 +2,7 @@ import re, json, unicodedata
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
-
+import shutil
 import streamlit as st
 import pandas as pd
 from docx import Document
@@ -206,6 +206,16 @@ def cargar_historial_dataframe():
         registros.append(registro)
 
     return registros
+def crear_respaldo():
+    carpeta = Path("RESPALDOS")
+    carpeta.mkdir(exist_ok=True)
+
+    fecha = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    destino = carpeta / f"respaldo_base_datos_pukaray_{fecha}.xlsx"
+
+    shutil.copy(DB_PATH, destino)
+
+    return destino
 cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
 curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, index=0, key=f"curso_sel_{reset_form}")
 estudiantes_filtrados = [e for e in estudiantes if curso_sel != "Seleccione curso" and normalizar(e.get("Curso", "")) == normalizar(curso_sel)]
@@ -338,7 +348,22 @@ else:
             use_container_width=True
         )
 estudiante = next((e for e in estudiantes_filtrados if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel), {})
+st.divider()
 
+st.header("Respaldos institucionales")
+
+if st.button("Crear respaldo de base de datos"):
+    respaldo = crear_respaldo()
+    st.success(f"Respaldo creado correctamente: {respaldo.name}")
+
+if Path(DB_PATH).exists():
+    with open(DB_PATH, "rb") as archivo:
+        st.download_button(
+            "Descargar base de datos actual",
+            archivo,
+            file_name="base_datos_pukaray.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
 hora = st.text_input("Hora entrevista", placeholder="Ej: 17:00 hrs", key=f"hora_{reset_form}")
 numero_entrevista = st.text_input("Número entrevista", placeholder="Ej: 001-2026", key=f"numero_{reset_form}")
