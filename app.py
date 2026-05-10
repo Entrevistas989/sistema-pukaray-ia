@@ -272,11 +272,45 @@ else:
     st.info("No existe la columna Nombre Funcionario en la base de datos.")
 historial = cargar_historial_dataframe()
 
-historial_estudiante = [
-    h for h in historial
-    if str(h.get("Nombre Estudiante", "")).strip().lower()
-    == str(estudiante_sel).strip().lower()
-]
+st.subheader("Historial del estudiante")
+
+df_historial = cargar_historial_dataframe()
+
+if estudiante_sel == "Seleccione estudiante":
+    st.info("Seleccione un estudiante para ver su historial.")
+
+elif df_historial.empty:
+    st.info("No existen intervenciones registradas.")
+
+else:
+    df_estudiante = df_historial[
+        df_historial["Nombre Estudiante"].fillna("").str.strip().str.lower()
+        == str(estudiante_sel).strip().lower()
+    ]
+
+    if df_estudiante.empty:
+        st.info("No existen intervenciones previas registradas para este estudiante.")
+    else:
+        columnas_mostrar = [
+            "Fecha Registro",
+            "Hora Registro",
+            "Curso",
+            "Nombre Estudiante",
+            "Gravedad",
+            "Categoría RICE",
+            "Medidas RICE",
+            "Archivo Generado"
+        ]
+
+        columnas_mostrar = [
+            c for c in columnas_mostrar
+            if c in df_estudiante.columns
+        ]
+
+        st.dataframe(
+            df_estudiante[columnas_mostrar],
+            use_container_width=True
+        )
 
 if estudiante_sel == "Seleccione estudiante":
     st.info("Seleccione un estudiante para ver su historial.")
