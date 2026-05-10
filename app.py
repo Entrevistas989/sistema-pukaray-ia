@@ -173,11 +173,53 @@ if "crear" not in st.session_state.get("usuario_permisos", []):
 
 reset_form = st.session_state.get("reset_form", 0)
 estudiantes, entrevistadores, responsables = leer_hoja("Estudiantes"), leer_hoja("Entrevistadores"), leer_hoja("Responsables_Apoyo")
+def cargar_historial():
+    wb = load_workbook(DB_PATH, data_only=True)
+    ws = wb["Seguimiento_Intervenciones"]
+
+    filas = list(ws.iter_rows(values_only=True))
+    if len(filas) <= 1:
+        return []
+
+    encabezados = [str(x or "") for x in filas[0]]
+    registros = []
+
+    for fila in filas[1:]:
+        registro = {}
+        for i, encabezado in enumerate(encabezados):
+            registro[encabezado] = fila[i] if i < len(fila) else ""
+        registros.append(registro)
+
+    return registros
 cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
 curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, index=0, key=f"curso_sel_{reset_form}")
 estudiantes_filtrados = [e for e in estudiantes if curso_sel != "Seleccione curso" and normalizar(e.get("Curso", "")) == normalizar(curso_sel)]
 nombres_estudiantes = [str(e.get("Nombre Estudiante", "")).strip() for e in estudiantes_filtrados]
 estudiante_sel = st.selectbox("Estudiante", ["Seleccione estudiante"] + nombres_estudiantes, index=0, key=f"estudiante_sel_{reset_form}_{normalizar(curso_sel)}")
+st.subheader("Historial del estudiante")
+
+historial = cargar_historial()
+
+historial_estudiante = [
+    h for h in historial
+    if str(h.get("Nombre Estudiante", "")).strip().lower()
+    == str(estudiante_sel).strip().lower()
+]
+
+if estudiante_sel == "Seleccione estudiante":
+    st.info("Seleccione un estudiante para ver su historial.")
+elif not historial_estudiante:
+    st.info("No existen intervenciones previas registradas para este estudiante.")
+else:
+    for h in historial_estudiante:
+        with st.expander(f"{h.get('Fecha Registro', '')} - {h.get('Gravedad', '')}"):
+            st.write(f"**Curso:** {h.get('Curso', '')}")
+            st.write(f"**Funcionario:** {h.get('Nombre Funcionario', '')}")
+            st.write(f"**Antecedentes:** {h.get('Antecedentes Mejorados', '')}")
+            st.write(f"**Categoría RICE:** {h.get('Categoría RICE', '')}")
+            st.write(f"**Normas RICE:** {h.get('Normas RICE', '')}")
+            st.write(f"**Medidas:** {h.get('Medidas RICE', '')}")
+            st.write(f"**Archivo:** {h.get('Archivo Generado', '')}")
 estudiante = next((e for e in estudiantes_filtrados if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel), {})
 
 fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
