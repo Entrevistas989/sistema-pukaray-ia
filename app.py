@@ -169,14 +169,14 @@ def registrar(registro):
 
 if st.session_state.get("salir"):
  LOGO_PATH = "logo_pukaray.png"
-    st.image(LOGO_PATH, width=150)
-    st.title("Sistema Pukaray IA")
+ st.image(LOGO_PATH, width=150)
+ st.title("Sistema Pukaray IA")
     st.success("Sesión cerrada en este equipo.")
     st.write("Puede cerrar esta pestaña del navegador.")
     if st.button("Volver a ingresar"):
         st.session_state.clear()
         st.rerun()
-    st.stop()
+    st.stop() 
 
 col1, col2 = st.columns([2, 1])
 with col1:
