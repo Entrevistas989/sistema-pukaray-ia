@@ -741,54 +741,6 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
         )
 
 
-# =========================================================
-# ESTADÍSTICAS
-# =========================================================
-
-st.divider()
-st.header("Estadísticas institucionales")
-
-df = cargar_historial_dataframe()
-
-if df.empty:
-    st.info("Aún no existen registros para estadísticas.")
-
-else:
-    col_a, col_b, col_c = st.columns(3)
-
-    with col_a:
-        st.metric("Total intervenciones", len(df))
-
-    with col_b:
-        if "nombre_estudiante" in df.columns:
-            st.metric(
-                "Estudiantes intervenidos",
-                df["nombre_estudiante"].nunique()
-            )
-
-    with col_c:
-        if "curso" in df.columns:
-            st.metric(
-                "Cursos con registros",
-                df["curso"].nunique()
-            )
-
-    st.subheader("Intervenciones por curso")
-    if "curso" in df.columns:
-        st.bar_chart(df["curso"].value_counts())
-
-    st.subheader("Intervenciones por gravedad")
-    if "gravedad" in df.columns:
-        st.bar_chart(df["gravedad"].value_counts())
-
-    st.subheader("Estudiantes con más intervenciones")
-    if "nombre_estudiante" in df.columns:
-        st.bar_chart(df["nombre_estudiante"].value_counts().head(10))
-
-    st.subheader("Funcionarios que registran entrevistas")
-    if "nombre_funcionario" in df.columns:
-        st.bar_chart(df["nombre_funcionario"].value_counts())
-
 
 # =========================================================
 # RESPALDOS
