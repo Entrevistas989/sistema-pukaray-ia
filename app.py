@@ -152,10 +152,27 @@ def completar_plantilla(datos, motivo, analisis, acuerdos):
     bio = BytesIO(); doc.save(bio); bio.seek(0); return bio
 
 def registrar(registro):
+
     wb = load_workbook(DB_PATH)
     ws = wb["Seguimiento_Intervenciones"]
-    ws.append([registro.get(k) for k in [
-        "fecha_registro","hora_registro","usuario_sistema","nombre_funcionario","cargo_funcionario","curso","nombre_estudiante","run","nombre_apoderado","relacion_apoderado","telefono_apoderado","correo_apoderado","entrevistadores","cargos_entrevistadores","departamentos","responsables_apoyo","roles_responsables","tipos_apoyo","asiste_apoderado","asiste_estudiante","antecedentes_originales","antecedentes_mejorados","motivo","analisis","acuerdos","categoria_rice","normas_rice","medidas_rice","alertas_rice","gravedad","archivo_generado","numero_entrevista"]])
+
+    encabezados = []
+
+    for celda in ws[1]:
+        encabezados.append(str(celda.value).strip())
+
+    nueva_fila = []
+
+    for encabezado in encabezados:
+
+        clave = encabezado.lower().strip()
+
+        valor = registro.get(clave, "")
+
+        nueva_fila.append(valor)
+
+    ws.append(nueva_fila)
+
     wb.save(DB_PATH)
 
 col1, col2 = st.columns([2, 1])
