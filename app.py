@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
+import pandas as pd
 from docx import Document
 from openpyxl import load_workbook
 
@@ -174,6 +175,14 @@ if "crear" not in st.session_state.get("usuario_permisos", []):
 reset_form = st.session_state.get("reset_form", 0)
 estudiantes, entrevistadores, responsables = leer_hoja("Estudiantes"), leer_hoja("Entrevistadores"), leer_hoja("Responsables_Apoyo")
 def cargar_historial():
+    def cargar_historial_dataframe():
+
+    historial = cargar_historial()
+
+    if not historial:
+        return pd.DataFrame()
+
+    return pd.DataFrame(historial)
     wb = load_workbook(DB_PATH, data_only=True)
     ws = wb["Seguimiento_Intervenciones"]
 
@@ -197,7 +206,64 @@ estudiantes_filtrados = [e for e in estudiantes if curso_sel != "Seleccione curs
 nombres_estudiantes = [str(e.get("Nombre Estudiante", "")).strip() for e in estudiantes_filtrados]
 estudiante_sel = st.selectbox("Estudiante", ["Seleccione estudiante"] + nombres_estudiantes, index=0, key=f"estudiante_sel_{reset_form}_{normalizar(curso_sel)}")
 st.subheader("Historial del estudiante")
+st.divider()
 
+st.header("Estadísticas institucionales")
+
+df = cargar_historial_dataframe()
+
+if df.empty:
+
+    st.info("Aún no existen registros para estadísticas.")
+
+else:
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Total intervenciones", len(df))
+
+    with col2:
+        if "Nombre Estudiante" in df.columns:
+            st.metric(
+                "Estudiantes intervenidos",
+                df["Nombre Estudiante"].nunique()
+            )
+
+    with col3:
+        if "Curso" in df.columns:
+            st.metric(
+                "Cursos con registros",
+                df["Curso"].nunique()
+            )
+
+    st.subheader("Intervenciones por curso")
+
+    if "Curso" in df.columns:
+        st.bar_chart(df["Curso"].value_counts())
+
+    st.subheader("Intervenciones por gravedad")
+
+    if "Gravedad" in df.columns:
+        st.bar_chart(df["Gravedad"].value_counts())
+
+    st.subheader("Estudiantes con más intervenciones")
+
+    if "Nombre Estudiante" in df.columns:
+        top_estudiantes = (
+            df["Nombre Estudiante"]
+            .value_counts()
+            .head(10)
+        )
+
+        st.bar_chart(top_estudiantes)
+
+    st.subheader("Funcionarios que registran entrevistas")
+
+    if "Nombre Funcionario" in df.columns:
+        st.bar_chart(
+            df["Nombre Funcionario"].value_counts()
+        )
 historial = cargar_historial()
 
 historial_estudiante = [
