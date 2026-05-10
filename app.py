@@ -174,7 +174,7 @@ if "crear" not in st.session_state.get("usuario_permisos", []):
 
 reset_form = st.session_state.get("reset_form", 0)
 estudiantes, entrevistadores, responsables = leer_hoja("Estudiantes"), leer_hoja("Entrevistadores"), leer_hoja("Responsables_Apoyo")
-def cargar_historial():
+
 def cargar_historial_dataframe():
 
     historial = cargar_historial()
