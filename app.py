@@ -298,14 +298,17 @@ def reemplazar_texto_en_doc(doc):
                                 run.text = run.text.replace(viejo, nuevo)
 
 
-def completar_plantilla(datos, motivo, analisis, acuerdos):
+def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
     doc = Document(TEMPLATE_PATH)
     reemplazar_texto_en_doc(doc)
 
-    def put(cell, text):
+def put(cell, text):
         cell.text = limpiar_para_word(text)
 
+    if tipo_registro == "Entrevista participante":
+
     put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
+
     put(doc.tables[1].cell(0, 1), datos["curso"])
     put(doc.tables[1].cell(0, 3), datos["fecha"])
     put(doc.tables[1].cell(0, 5), datos["hora"])
@@ -317,10 +320,42 @@ def completar_plantilla(datos, motivo, analisis, acuerdos):
     put(doc.tables[3].cell(0, 5), datos["numero_entrevista"])
 
     put(doc.tables[3].cell(1, 1 if datos["asiste_participante"] == "Sí" else 2), " X")
+
     put(doc.tables[3].cell(1, 5 if datos["asiste_estudiante"] == "Sí" else 6), " X")
 
     put(doc.tables[4].cell(0, 1), motivo)
+
     put(doc.tables[5].cell(0, 1), f"{analisis}\n\n{acuerdos}")
+
+elif tipo_registro == "Atención estudiante":
+
+    put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
+
+    put(doc.tables[1].cell(0, 1), datos["curso"])
+    put(doc.tables[1].cell(0, 3), datos["fecha"])
+    put(doc.tables[1].cell(0, 5), datos["hora"])
+
+    put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
+    put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
+
+    put(doc.tables[3].cell(0, 1), motivo)
+
+    put(doc.tables[4].cell(0, 1), acuerdos)
+
+else:
+
+    put(doc.tables[0].cell(0, 1), datos["participante_entrevista"])
+
+    put(doc.tables[1].cell(0, 1), datos["vinculo_persona"])
+    put(doc.tables[1].cell(0, 3), datos["fecha"])
+    put(doc.tables[1].cell(0, 5), datos["hora"])
+
+    put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
+    put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
+
+    put(doc.tables[3].cell(0, 1), motivo)
+
+    put(doc.tables[4].cell(0, 1), acuerdos)
 
     bio = BytesIO()
     doc.save(bio)
@@ -744,6 +779,7 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
             motivo,
             analisis,
             acuerdos
+            tipo_registro
         )
 
         ahora = datetime.now()
