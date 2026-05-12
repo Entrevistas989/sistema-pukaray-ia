@@ -189,49 +189,155 @@ def seleccionar_plantilla(tipo_registro):
 
 
 def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
-    if tipo_registro == "Atención estudiante":
-        encabezado = "Se realiza atención individual de estudiante, con el propósito de registrar antecedentes asociados a su proceso formativo, socioemocional o de convivencia escolar."
-    elif tipo_registro == "Atención funcionario":
-        encabezado = "Se realiza atención individual de funcionario, con el propósito de registrar antecedentes asociados al ámbito institucional, laboral o de convivencia interna."
+
+    gravedad = str(rice.get("gravedad", "BAJA")).upper()
+
+    categorias = rice.get("categoria", [])
+    normas = rice.get("normas", [])
+    medidas = rice.get("medidas", [])
+    alertas = rice.get("alertas", [])
+
+    # =====================================================
+    # ENTREVISTA PARTICIPANTE
+    # =====================================================
+
+    if tipo_registro == "Entrevista participante":
+
+        motivo = (
+            "Se realiza entrevista con participante convocado, con el propósito de "
+            "informar y abordar antecedentes asociados al proceso formativo, "
+            "conductual y de convivencia escolar del estudiante.\n\n"
+            "ANTECEDENTES EXPUESTOS:\n"
+            f"{antecedentes_mejorados}"
+        )
+
+        analisis = [
+            "ANÁLISIS INSTITUCIONAL",
+            "1. Los antecedentes expuestos fueron abordados desde una perspectiva formativa y de acompañamiento institucional.",
+            "2. Se enfatiza la importancia del trabajo colaborativo entre familia y establecimiento educacional.",
+            "3. Se observa necesidad de reforzar normas de convivencia, regulación conductual y habilidades de resolución pacífica de conflictos.",
+        ]
+
+        if categorias:
+            analisis.append("4. Clasificación referencial según RICE:")
+            analisis += [f"   • {x}" for x in categorias]
+
+        if normas:
+            analisis.append("5. Normativa institucional asociada:")
+            analisis += [f"   • {x}" for x in normas]
+
+        acuerdos = [
+            "ACUERDOS Y COMPROMISOS",
+            "1. Participante toma conocimiento formal de los antecedentes expuestos.",
+            "2. Se acuerda reforzar estrategias de acompañamiento y supervisión desde el hogar.",
+            "3. El establecimiento mantendrá monitoreo y seguimiento institucional del caso.",
+        ]
+
+    # =====================================================
+    # ATENCIÓN ESTUDIANTE
+    # =====================================================
+
+    elif tipo_registro == "Atención estudiante":
+
+        motivo = (
+            "Se realiza atención individual de estudiante con el propósito de "
+            "abordar reflexivamente situaciones asociadas a convivencia escolar, "
+            "conducta, regulación emocional y cumplimiento de normas institucionales.\n\n"
+            "RELATO Y ANTECEDENTES:\n"
+            f"{antecedentes_mejorados}"
+        )
+
+        analisis = [
+            "ANÁLISIS FORMATIVO",
+            "1. Durante la intervención se promueve la reflexión respecto de las conductas descritas y sus consecuencias.",
+            "2. Se orienta al estudiante respecto a la importancia del autocontrol, respeto interpersonal y responsabilidad individual.",
+            "3. Se refuerzan estrategias de resolución pacífica de conflictos y convivencia respetuosa.",
+        ]
+
+        if gravedad in ["ALTA", "GRAVE", "CRÍTICA"]:
+            analisis.append(
+                "4. Los antecedentes requieren seguimiento prioritario por parte del equipo institucional."
+            )
+
+        if categorias:
+            analisis.append("5. Clasificación referencial según RICE:")
+            analisis += [f"   • {x}" for x in categorias]
+
+        acuerdos = [
+            "ACUERDOS Y REFLEXIONES",
+            "1. Estudiante toma conocimiento de los antecedentes abordados durante la intervención.",
+            "2. Se compromete a mantener conductas de respeto y cumplimiento de normas institucionales.",
+            "3. Se reforzará acompañamiento socioemocional y seguimiento formativo según evolución del caso.",
+        ]
+
+    # =====================================================
+    # ATENCIÓN FUNCIONARIO
+    # =====================================================
+
     else:
-        encabezado = "Se realiza entrevista con participante convocado, con el propósito de informar antecedentes asociados al proceso formativo y de convivencia escolar del estudiante."
 
-    motivo = f"{encabezado}\n\nANTECEDENTES INFORMADOS:\n{antecedentes_mejorados}"
+        motivo = (
+            "Se realiza atención individual de funcionario con el propósito de "
+            "abordar antecedentes asociados al ámbito institucional, convivencia "
+            "interna, coordinación laboral o situaciones que requieren registro formal.\n\n"
+            "ANTECEDENTES REGISTRADOS:\n"
+            f"{antecedentes_mejorados}"
+        )
 
-    analisis = [
-        "ANÁLISIS INSTITUCIONAL",
-        "1. Los antecedentes descritos evidencian una situación que requiere abordaje formativo, resguardo institucional y seguimiento.",
-        "2. Se recomienda fortalecer la reflexión de los involucrados, promoviendo la reparación, el buen trato y el cumplimiento de las normas institucionales.",
-        "3. Clasificación referencial según RICE:",
-    ]
-    analisis += [f"   • {x}" for x in rice.get("categoria", [])]
-    analisis.append("4. Normas posiblemente asociadas:")
-    analisis += [f"   • {x}" for x in rice.get("normas", [])]
+        analisis = [
+            "ANÁLISIS INSTITUCIONAL",
+            "1. Los antecedentes fueron abordados considerando criterios de convivencia interna, resguardo institucional y coordinación profesional.",
+            "2. Se releva la importancia de mantener canales adecuados de comunicación, respeto mutuo y cumplimiento de protocolos institucionales.",
+            "3. Se orienta la intervención hacia estrategias de mejora y fortalecimiento del clima laboral e institucional.",
+        ]
 
-    acuerdos = [
-        "ACUERDOS Y CONCLUSIONES",
-        "1. Se toma conocimiento formal de los antecedentes expuestos.",
-        "2. Se acuerda mantener seguimiento institucional según la naturaleza del caso.",
-        "3. Se reforzarán las orientaciones de respeto, buen trato y resolución adecuada de conflictos.",
-    ]
+        if categorias:
+            analisis.append("4. Referencias asociadas al análisis institucional:")
+            analisis += [f"   • {x}" for x in categorias]
+
+        acuerdos = [
+            "ACUERDOS Y ORIENTACIONES",
+            "1. Funcionario toma conocimiento formal de los antecedentes tratados.",
+            "2. Se acuerda mantener coordinación y seguimiento institucional según corresponda.",
+            "3. Se reforzarán estrategias de comunicación y resguardo del clima institucional.",
+        ]
+
+    # =====================================================
+    # BLOQUES COMUNES IA + RICE
+    # =====================================================
+
+    if medidas:
+        acuerdos.append("MEDIDAS Y ACCIONES SUGERIDAS:")
+        acuerdos += [f"   • {x}" for x in medidas]
 
     if responsables_apoyo:
-        acuerdos.append(f"4. Responsables de ejecución y seguimiento de apoyos: {responsables_apoyo}.")
+        acuerdos.append(
+            f"RESPONSABLES DE APOYO Y SEGUIMIENTO: {responsables_apoyo}."
+        )
+
     if tipo_apoyo:
-        acuerdos.append("5. Apoyos comprometidos:")
-        acuerdos += [f"   • {linea.strip()}" for linea in str(tipo_apoyo).splitlines() if linea.strip()]
-    if rice.get("medidas"):
-        acuerdos.append("6. Medidas formativas sugeridas según análisis RICE:")
-        acuerdos += [f"   • {x}" for x in rice.get("medidas", [])]
-    acuerdos.append(f"7. Nivel referencial de gravedad institucional: {rice.get('gravedad', 'BAJA')}.")
+        acuerdos.append("APOYOS COMPROMETIDOS:")
+        acuerdos += [
+            f"   • {linea.strip()}"
+            for linea in str(tipo_apoyo).splitlines()
+            if linea.strip()
+        ]
 
-    if rice.get("alertas"):
-        acuerdos.append("8. Alertas para revisión del equipo:")
-        acuerdos += [f"   • {x}" for x in rice.get("alertas", [])]
+    acuerdos.append(
+        f"NIVEL REFERENCIAL DE GRAVEDAD INSTITUCIONAL: {gravedad}."
+    )
 
-    firma = f"\n\nDocumento generado por:\n{st.session_state.get('usuario_nombre', '')}\n{st.session_state.get('usuario_cargo', '')}"
+    if alertas:
+        acuerdos.append("ALERTAS INSTITUCIONALES:")
+        acuerdos += [f"   • {x}" for x in alertas]
+
+    firma = (
+        f"\n\nDocumento generado por:\n"
+        f"{st.session_state.get('usuario_nombre', '')}\n"
+        f"{st.session_state.get('usuario_cargo', '')}"
+    )
+
     return motivo, "\n".join(analisis), "\n".join(acuerdos) + firma
-
 
 def reemplazar_texto_en_doc(doc):
     reemplazos = {
