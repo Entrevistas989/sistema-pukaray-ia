@@ -365,6 +365,10 @@ def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
     def put(cell, text):
         cell.text = limpiar_para_word(text)
 
+    motivo_con_folio = (
+        "Folio N° " + str(datos["numero_entrevista"]) + "\\n\\n" + str(motivo)
+    )
+
     if tipo_registro == "Entrevista participante":
         put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
         put(doc.tables[1].cell(0, 1), datos["curso"])
@@ -376,7 +380,7 @@ def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
         put(doc.tables[3].cell(0, 5), datos["numero_entrevista"])
         put(doc.tables[3].cell(1, 1 if datos["asiste_participante"] == "Sí" else 2), " X")
         put(doc.tables[3].cell(1, 5 if datos["asiste_estudiante"] == "Sí" else 6), " X")
-        put(doc.tables[4].cell(0, 1), motivo)
+        put(doc.tables[4].cell(0, 1), motivo_con_folio)
         put(doc.tables[5].cell(0, 1), f"{analisis}\n\n{acuerdos}")
 
     elif tipo_registro == "Atención estudiante":
@@ -386,7 +390,7 @@ def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
         put(doc.tables[1].cell(0, 5), datos["hora"])
         put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
         put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
-        put(doc.tables[3].cell(0, 1), motivo)
+        put(doc.tables[3].cell(0, 1), motivo_con_folio)
         put(doc.tables[4].cell(0, 1), acuerdos)
 
     else:
@@ -396,13 +400,14 @@ def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
         put(doc.tables[1].cell(0, 5), datos["hora"])
         put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
         put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
-        put(doc.tables[3].cell(0, 1), motivo)
+        put(doc.tables[3].cell(0, 1), motivo_con_folio)
         put(doc.tables[4].cell(0, 1), acuerdos)
 
     bio = BytesIO()
     doc.save(bio)
     bio.seek(0)
     return bio
+
 def generar_folio():
     df = cargar_historial_dataframe()
 
