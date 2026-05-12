@@ -1,4 +1,3 @@
-
 import re
 import json
 import unicodedata
@@ -16,7 +15,10 @@ from motor_rice import analizar_rice
 from redactor_institucional import mejorar_antecedentes
 
 
-TEMPLATE_PATH = "plantilla_ficha_entrevista_apoderado.docx"
+TEMPLATE_PARTICIPANTE = "plantilla_ficha_entrevista_apoderado.docx"
+TEMPLATE_ESTUDIANTE = "Ficha_Entrevista_ESTUDIANTE.docx"
+TEMPLATE_FUNCIONARIO = "Ficha_Entrevista_FUNCIONARIO.docx"
+
 DB_PATH = "base_datos_pukaray.xlsx"
 USERS_PATH = "usuarios.json"
 LOGO_PATH = "logo_pukaray.png"
@@ -29,10 +31,6 @@ st.set_page_config(
 )
 
 
-# =========================================================
-# UTILIDADES GENERALES
-# =========================================================
-
 def normalizar(texto):
     texto = str(texto or "").strip()
     texto = unicodedata.normalize("NFD", texto)
@@ -41,12 +39,6 @@ def normalizar(texto):
 
 
 def normalizar_clave(texto):
-    """
-    Convierte encabezados de Excel a claves técnicas.
-    Ejemplo:
-    'Fecha Registro' -> 'fecha_registro'
-    'Categoría RICE' -> 'categoria_rice'
-    """
     texto = str(texto or "").strip().lower()
     texto = unicodedata.normalize("NFD", texto)
     texto = "".join(ch for ch in texto if unicodedata.category(ch) != "Mn")
@@ -67,17 +59,9 @@ def limpiar_para_word(texto):
 
 def obtener_iniciales_usuario():
     usuario_actual = st.session_state.get("usuario_nombre", "")
-    iniciales = "".join([
-        palabra[0].upper()
-        for palabra in usuario_actual.split()
-        if palabra
-    ])
+    iniciales = "".join([palabra[0].upper() for palabra in usuario_actual.split() if palabra])
     return iniciales or "US"
 
-
-# =========================================================
-# LOGIN
-# =========================================================
 
 def cargar_usuarios():
     with open(USERS_PATH, "r", encoding="utf-8") as f:
@@ -95,11 +79,10 @@ def pantalla_login():
             <p style="color:#f5f3eb;text-align:center;margin:6px 0 0 0;">Ingreso funcionarios autorizados</p>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     usuarios = cargar_usuarios()
-
     usuario = st.text_input("Usuario")
     clave = st.text_input("Contraseña", type="password")
 
@@ -120,10 +103,6 @@ if not st.session_state.get("autenticado"):
     st.stop()
 
 
-def tiene_permiso(nombre_permiso):
-    return nombre_permiso in st.session_state.get("usuario_permisos", [])
-
-
 def limpiar_datos():
     sesion = {
         "autenticado": st.session_state.get("autenticado"),
@@ -131,7 +110,7 @@ def limpiar_datos():
         "usuario_nombre": st.session_state.get("usuario_nombre"),
         "usuario_cargo": st.session_state.get("usuario_cargo"),
         "usuario_permisos": st.session_state.get("usuario_permisos", []),
-        "reset_form": st.session_state.get("reset_form", 0) + 1
+        "reset_form": st.session_state.get("reset_form", 0) + 1,
     }
     st.session_state.clear()
     st.session_state.update(sesion)
@@ -143,37 +122,25 @@ def cerrar_sesion():
     st.rerun()
 
 
-# =========================================================
-# LECTURA BASE DE DATOS
-# =========================================================
-
 def leer_hoja(nombre_hoja):
     wb = load_workbook(DB_PATH, data_only=True)
     ws = wb[nombre_hoja]
-
     headers = [str(c.value or "").strip() for c in ws[1]]
     registros = []
 
     for row in ws.iter_rows(min_row=2, values_only=True):
         if not any(row):
             continue
-
-        item = {
-            headers[i]: row[i] if i < len(row) else ""
-            for i in range(len(headers))
-        }
-
+        item = {headers[i]: row[i] if i < len(row) else "" for i in range(len(headers))}
         estado = str(item.get("Estado", "Activo") or "Activo").strip().lower()
         if estado == "activo":
             registros.append(item)
-
     return registros
 
 
 def cargar_historial_dataframe():
     wb = load_workbook(DB_PATH, data_only=True)
     ws = wb["Seguimiento_Intervenciones"]
-
     filas = list(ws.iter_rows(values_only=True))
 
     if len(filas) <= 1:
@@ -188,21 +155,13 @@ def cargar_historial_dataframe():
 
 def contar_intervenciones_previas(nombre_estudiante):
     df = cargar_historial_dataframe()
-
     if df.empty or "nombre_estudiante" not in df.columns:
         return 0
-
-    return int(
-        (
-            df["nombre_estudiante"].fillna("").astype(str).str.strip().str.lower()
-            == str(nombre_estudiante).strip().lower()
-        ).sum()
-    )
+    return int((df["nombre_estudiante"].fillna("").astype(str).str.strip().str.lower() == str(nombre_estudiante).strip().lower()).sum())
 
 
 def resumen_personas(registros, nombre_key, cargo_key, depto_key=None, apoyo_key=None):
     nombres, cargos, deptos, apoyos = [], [], [], []
-
     for r in registros:
         if r.get(nombre_key):
             nombres.append(str(r.get(nombre_key, "") or ""))
@@ -221,73 +180,65 @@ def resumen_personas(registros, nombre_key, cargo_key, depto_key=None, apoyo_key
     }
 
 
-# =========================================================
-# REDACCIÓN Y WORD
-# =========================================================
+def seleccionar_plantilla(tipo_registro):
+    if tipo_registro == "Entrevista participante":
+        return TEMPLATE_PARTICIPANTE
+    if tipo_registro == "Atención estudiante":
+        return TEMPLATE_ESTUDIANTE
+    return TEMPLATE_FUNCIONARIO
 
-def redactar_textos(antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
-    motivo = (
-        "Se realiza entrevista con participante convocado, con el propósito de informar antecedentes "
-        "asociados al proceso formativo y de convivencia escolar del estudiante.\n\n"
-        "ANTECEDENTES INFORMADOS:\n"
-        f"{antecedentes_mejorados}"
-    )
+
+def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
+    if tipo_registro == "Atención estudiante":
+        encabezado = "Se realiza atención individual de estudiante, con el propósito de registrar antecedentes asociados a su proceso formativo, socioemocional o de convivencia escolar."
+    elif tipo_registro == "Atención funcionario":
+        encabezado = "Se realiza atención individual de funcionario, con el propósito de registrar antecedentes asociados al ámbito institucional, laboral o de convivencia interna."
+    else:
+        encabezado = "Se realiza entrevista con participante convocado, con el propósito de informar antecedentes asociados al proceso formativo y de convivencia escolar del estudiante."
+
+    motivo = f"{encabezado}\n\nANTECEDENTES INFORMADOS:\n{antecedentes_mejorados}"
 
     analisis = [
         "ANÁLISIS INSTITUCIONAL",
-        "1. Los antecedentes descritos evidencian una situación que requiere abordaje formativo, resguardo de la convivencia escolar y coordinación con la familia.",
-        "2. Se recomienda fortalecer la reflexión del estudiante respecto de sus acciones, promoviendo la reparación del daño y el cumplimiento de las normas institucionales.",
-        "3. Clasificación referencial según RICE:"
+        "1. Los antecedentes descritos evidencian una situación que requiere abordaje formativo, resguardo institucional y seguimiento.",
+        "2. Se recomienda fortalecer la reflexión de los involucrados, promoviendo la reparación, el buen trato y el cumplimiento de las normas institucionales.",
+        "3. Clasificación referencial según RICE:",
     ]
-
     analisis += [f"   • {x}" for x in rice.get("categoria", [])]
     analisis.append("4. Normas posiblemente asociadas:")
     analisis += [f"   • {x}" for x in rice.get("normas", [])]
 
     acuerdos = [
         "ACUERDOS Y CONCLUSIONES",
-        "1. El participante de la entrevista toma conocimiento formal de los antecedentes expuestos.",
-        "2. Se acuerda reforzar desde el hogar y/o desde el rol correspondiente las normas de respeto, buen trato y resolución adecuada de conflictos.",
-        "3. El establecimiento realizará seguimiento institucional del caso."
+        "1. Se toma conocimiento formal de los antecedentes expuestos.",
+        "2. Se acuerda mantener seguimiento institucional según la naturaleza del caso.",
+        "3. Se reforzarán las orientaciones de respeto, buen trato y resolución adecuada de conflictos.",
     ]
 
     if responsables_apoyo:
         acuerdos.append(f"4. Responsables de ejecución y seguimiento de apoyos: {responsables_apoyo}.")
-
     if tipo_apoyo:
         acuerdos.append("5. Apoyos comprometidos:")
         acuerdos += [f"   • {linea.strip()}" for linea in str(tipo_apoyo).splitlines() if linea.strip()]
-
     if rice.get("medidas"):
         acuerdos.append("6. Medidas formativas sugeridas según análisis RICE:")
         acuerdos += [f"   • {x}" for x in rice.get("medidas", [])]
-
     acuerdos.append(f"7. Nivel referencial de gravedad institucional: {rice.get('gravedad', 'BAJA')}.")
 
     if rice.get("alertas"):
         acuerdos.append("8. Alertas para revisión del equipo:")
         acuerdos += [f"   • {x}" for x in rice.get("alertas", [])]
 
-    firma = (
-        "\n\nDocumento generado por:\n"
-        f"{st.session_state.get('usuario_nombre', '')}\n"
-        f"{st.session_state.get('usuario_cargo', '')}"
-    )
-
+    firma = f"\n\nDocumento generado por:\n{st.session_state.get('usuario_nombre', '')}\n{st.session_state.get('usuario_cargo', '')}"
     return motivo, "\n".join(analisis), "\n".join(acuerdos) + firma
 
 
 def reemplazar_texto_en_doc(doc):
-    """
-    Ajusta textos visibles heredados de la plantilla Word.
-    Mantiene el formato general, pero reemplaza 'Apoderado' por 'Participante'.
-    """
     reemplazos = {
         "APODERADO": "PARTICIPANTE",
         "Apoderado": "Participante",
-        "apoderado": "participante"
+        "apoderado": "participante",
     }
-
     for tabla in doc.tables:
         for fila in tabla.rows:
             for celda in fila.cells:
@@ -299,63 +250,48 @@ def reemplazar_texto_en_doc(doc):
 
 
 def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
-    doc = Document(TEMPLATE_PATH)
-    reemplazar_texto_en_doc(doc)
+    plantilla = seleccionar_plantilla(tipo_registro)
+    doc = Document(plantilla)
 
-def put(cell, text):
+    if tipo_registro == "Entrevista participante":
+        reemplazar_texto_en_doc(doc)
+
+    def put(cell, text):
         cell.text = limpiar_para_word(text)
 
     if tipo_registro == "Entrevista participante":
+        put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
+        put(doc.tables[1].cell(0, 1), datos["curso"])
+        put(doc.tables[1].cell(0, 3), datos["fecha"])
+        put(doc.tables[1].cell(0, 5), datos["hora"])
+        put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
+        put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
+        put(doc.tables[3].cell(0, 1), datos["departamentos"])
+        put(doc.tables[3].cell(0, 5), datos["numero_entrevista"])
+        put(doc.tables[3].cell(1, 1 if datos["asiste_participante"] == "Sí" else 2), " X")
+        put(doc.tables[3].cell(1, 5 if datos["asiste_estudiante"] == "Sí" else 6), " X")
+        put(doc.tables[4].cell(0, 1), motivo)
+        put(doc.tables[5].cell(0, 1), f"{analisis}\n\n{acuerdos}")
 
-    put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
+    elif tipo_registro == "Atención estudiante":
+        put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
+        put(doc.tables[1].cell(0, 1), datos["curso"])
+        put(doc.tables[1].cell(0, 3), datos["fecha"])
+        put(doc.tables[1].cell(0, 5), datos["hora"])
+        put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
+        put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
+        put(doc.tables[3].cell(0, 1), motivo)
+        put(doc.tables[4].cell(0, 1), acuerdos)
 
-    put(doc.tables[1].cell(0, 1), datos["curso"])
-    put(doc.tables[1].cell(0, 3), datos["fecha"])
-    put(doc.tables[1].cell(0, 5), datos["hora"])
-
-    put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
-    put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
-
-    put(doc.tables[3].cell(0, 1), datos["departamentos"])
-    put(doc.tables[3].cell(0, 5), datos["numero_entrevista"])
-
-    put(doc.tables[3].cell(1, 1 if datos["asiste_participante"] == "Sí" else 2), " X")
-
-    put(doc.tables[3].cell(1, 5 if datos["asiste_estudiante"] == "Sí" else 6), " X")
-
-    put(doc.tables[4].cell(0, 1), motivo)
-
-    put(doc.tables[5].cell(0, 1), f"{analisis}\n\n{acuerdos}")
-
-elif tipo_registro == "Atención estudiante":
-
-    put(doc.tables[0].cell(0, 1), datos["nombre_estudiante"])
-
-    put(doc.tables[1].cell(0, 1), datos["curso"])
-    put(doc.tables[1].cell(0, 3), datos["fecha"])
-    put(doc.tables[1].cell(0, 5), datos["hora"])
-
-    put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
-    put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
-
-    put(doc.tables[3].cell(0, 1), motivo)
-
-    put(doc.tables[4].cell(0, 1), acuerdos)
-
-else:
-
-    put(doc.tables[0].cell(0, 1), datos["participante_entrevista"])
-
-    put(doc.tables[1].cell(0, 1), datos["vinculo_persona"])
-    put(doc.tables[1].cell(0, 3), datos["fecha"])
-    put(doc.tables[1].cell(0, 5), datos["hora"])
-
-    put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
-    put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
-
-    put(doc.tables[3].cell(0, 1), motivo)
-
-    put(doc.tables[4].cell(0, 1), acuerdos)
+    else:
+        put(doc.tables[0].cell(0, 1), datos["participante_entrevista"])
+        put(doc.tables[1].cell(0, 1), datos["vinculo_persona"])
+        put(doc.tables[1].cell(0, 3), datos["fecha"])
+        put(doc.tables[1].cell(0, 5), datos["hora"])
+        put(doc.tables[2].cell(0, 1), datos["entrevistadores"])
+        put(doc.tables[2].cell(0, 3), datos["cargos_entrevistadores"])
+        put(doc.tables[3].cell(0, 1), motivo)
+        put(doc.tables[4].cell(0, 1), acuerdos)
 
     bio = BytesIO()
     doc.save(bio)
@@ -363,24 +299,11 @@ else:
     return bio
 
 
-# =========================================================
-# REGISTRO Y RESPALDOS
-# =========================================================
-
 def registrar(registro):
     wb = load_workbook(DB_PATH)
     ws = wb["Seguimiento_Intervenciones"]
-
-    encabezados = [
-        normalizar_clave(celda.value)
-        for celda in ws[1]
-    ]
-
-    nueva_fila = [
-        registro.get(encabezado, "")
-        for encabezado in encabezados
-    ]
-
+    encabezados = [normalizar_clave(celda.value) for celda in ws[1]]
+    nueva_fila = [registro.get(encabezado, "") for encabezado in encabezados]
     ws.append(nueva_fila)
     wb.save(DB_PATH)
 
@@ -388,13 +311,40 @@ def registrar(registro):
 def crear_respaldo():
     carpeta = Path("RESPALDOS")
     carpeta.mkdir(exist_ok=True)
-
     fecha = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     destino = carpeta / f"respaldo_base_datos_pukaray_{fecha}.xlsx"
-
     shutil.copy(DB_PATH, destino)
-
     return destino
+
+
+def generar_informe_word(df_filtrado, titulo):
+    doc = Document()
+    doc.add_heading("Informe Institucional de Intervenciones", level=1)
+    doc.add_paragraph("Colegio Pukaray")
+    doc.add_paragraph(f"Fecha de generación: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    doc.add_paragraph(f"Generado por: {st.session_state.get('usuario_nombre', '')} - {st.session_state.get('usuario_cargo', '')}")
+    doc.add_heading(titulo, level=2)
+    doc.add_paragraph(f"Total de registros: {len(df_filtrado)}")
+
+    for _, fila in df_filtrado.iterrows():
+        doc.add_paragraph(
+            (
+                f"Fecha: {fila.get('fecha_registro', '')}\n"
+                f"Tipo registro: {fila.get('tipo_registro', '')}\n"
+                f"Estudiante: {fila.get('nombre_estudiante', '')}\n"
+                f"Curso: {fila.get('curso', '')}\n"
+                f"Participante: {fila.get('participante_entrevista', '')}\n"
+                f"Vínculo: {fila.get('vinculo_persona', '')}\n"
+                f"Gravedad: {fila.get('gravedad', '')}\n"
+                f"Categoría RICE: {fila.get('categoria_rice', '')}\n"
+                f"Medidas: {fila.get('medidas_rice', '')}\n"
+            )
+        )
+
+    bio = BytesIO()
+    doc.save(bio)
+    bio.seek(0)
+    return bio
 
 
 # =========================================================
@@ -406,7 +356,6 @@ col1, col2 = st.columns([2, 1])
 with col1:
     if Path(LOGO_PATH).exists():
         st.image(LOGO_PATH, width=120)
-
     st.markdown(
         """
         <div style="background-color:#f5f3eb;border-left:8px solid #1a542a;padding:16px;border-radius:10px;">
@@ -414,13 +363,9 @@ with col1:
             <p style="margin:4px 0 0 0;color:#6b1e11;">Entrevistas · RICE · Seguimiento institucional</p>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
-
-    st.caption(
-        f"Usuario conectado: {st.session_state.get('usuario_nombre')} · "
-        f"{st.session_state.get('usuario_cargo')}"
-    )
+    st.caption(f"Usuario conectado: {st.session_state.get('usuario_nombre')} · {st.session_state.get('usuario_cargo')}")
 
 with col2:
     if st.button("Limpiar datos"):
@@ -435,247 +380,165 @@ if "crear" not in st.session_state.get("usuario_permisos", []):
 
 
 reset_form = st.session_state.get("reset_form", 0)
-
 estudiantes = leer_hoja("Estudiantes")
 entrevistadores = leer_hoja("Entrevistadores")
 responsables = leer_hoja("Responsables_Apoyo")
+df_historial = cargar_historial_dataframe()
 
 
 # =========================================================
-# SELECCIÓN DE ESTUDIANTE
+# FORMULARIO
 # =========================================================
 
-st.subheader("Datos del estudiante")
+st.divider()
+st.subheader("Datos de la entrevista")
 
-cursos = sorted({
-    str(e.get("Curso", "")).strip()
-    for e in estudiantes
-    if str(e.get("Curso", "")).strip()
-})
-
-curso_sel = st.selectbox(
-    "Curso",
-    ["Seleccione curso"] + cursos,
-    index=0,
-    key=f"curso_sel_{reset_form}"
+tipo_registro = st.selectbox(
+    "Tipo de registro",
+    ["Entrevista participante", "Atención estudiante", "Atención funcionario"],
+    key=f"tipo_registro_{reset_form}",
 )
 
-estudiantes_filtrados = [
-    e for e in estudiantes
-    if curso_sel != "Seleccione curso"
-    and normalizar(e.get("Curso", "")) == normalizar(curso_sel)
-]
+st.subheader("Selección según tipo de registro")
 
-nombres_estudiantes = [
-    str(e.get("Nombre Estudiante", "")).strip()
-    for e in estudiantes_filtrados
-]
+curso_sel = "No aplica"
+estudiante_sel = "No aplica"
+estudiante = {}
+funcionario_sel = "Seleccione funcionario"
+funcionario_data = {}
 
-estudiante_sel = st.selectbox(
-    "Estudiante",
-    ["Seleccione estudiante"] + nombres_estudiantes,
-    index=0,
-    key=f"estudiante_sel_{reset_form}_{normalizar(curso_sel)}"
-)
+if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
+    cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
+    curso_sel = st.selectbox("Curso", ["Seleccione curso"] + cursos, index=0, key=f"curso_sel_{reset_form}")
 
-estudiante = next(
-    (
-        e for e in estudiantes_filtrados
-        if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel
-    ),
-    {}
-)
+    estudiantes_filtrados = [
+        e for e in estudiantes
+        if curso_sel != "Seleccione curso" and normalizar(e.get("Curso", "")) == normalizar(curso_sel)
+    ]
+
+    nombres_estudiantes = [str(e.get("Nombre Estudiante", "")).strip() for e in estudiantes_filtrados]
+
+    estudiante_sel = st.selectbox(
+        "Estudiante",
+        ["Seleccione estudiante"] + nombres_estudiantes,
+        index=0,
+        key=f"estudiante_sel_{reset_form}_{normalizar(curso_sel)}",
+    )
+
+    estudiante = next(
+        (e for e in estudiantes_filtrados if str(e.get("Nombre Estudiante", "")).strip() == estudiante_sel),
+        {},
+    )
+
+else:
+    nombres_funcionarios = [e.get("Nombre Entrevistador", "") for e in entrevistadores if e.get("Nombre Entrevistador")]
+    funcionario_sel = st.selectbox(
+        "Funcionario a entrevistar",
+        ["Seleccione funcionario"] + nombres_funcionarios,
+        index=0,
+        key=f"funcionario_sel_{reset_form}",
+    )
+    funcionario_data = next(
+        (e for e in entrevistadores if str(e.get("Nombre Entrevistador", "")).strip() == funcionario_sel),
+        {},
+    )
 
 
 # =========================================================
 # HISTORIAL DEL ESTUDIANTE
 # =========================================================
 
-st.subheader("Historial del estudiante")
+if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
+    st.subheader("Historial del estudiante")
 
-df_historial = cargar_historial_dataframe()
-
-if estudiante_sel == "Seleccione estudiante":
-    st.info("Seleccione un estudiante para ver su historial.")
-
-elif df_historial.empty:
-    st.info("No existen intervenciones registradas.")
-
-elif "nombre_estudiante" not in df_historial.columns:
-    st.warning("La hoja Seguimiento_Intervenciones no contiene la columna nombre_estudiante.")
-
-else:
-    df_estudiante = df_historial[
-        df_historial["nombre_estudiante"].fillna("").astype(str).str.strip().str.lower()
-        == str(estudiante_sel).strip().lower()
-    ]
-
-    if df_estudiante.empty:
-        st.info("No existen intervenciones previas registradas para este estudiante.")
+    if estudiante_sel == "Seleccione estudiante":
+        st.info("Seleccione un estudiante para ver su historial.")
+    elif df_historial.empty:
+        st.info("No existen intervenciones registradas.")
+    elif "nombre_estudiante" not in df_historial.columns:
+        st.warning("La hoja Seguimiento_Intervenciones no contiene la columna nombre_estudiante.")
     else:
-        columnas_mostrar = [
-            "fecha_registro",
-            "hora_registro",
-            "curso",
-            "nombre_estudiante",
-            "gravedad",
-            "categoria_rice",
-            "medidas_rice",
-            "archivo_generado"
+        df_estudiante = df_historial[
+            df_historial["nombre_estudiante"].fillna("").astype(str).str.strip().str.lower()
+            == str(estudiante_sel).strip().lower()
         ]
-
-        columnas_mostrar = [
-            c for c in columnas_mostrar
-            if c in df_estudiante.columns
-        ]
-
-        st.dataframe(
-            df_estudiante[columnas_mostrar],
-            use_container_width=True
-        )
+        if df_estudiante.empty:
+            st.info("No existen intervenciones previas registradas para este estudiante.")
+        else:
+            columnas_mostrar = [
+                "fecha_registro",
+                "hora_registro",
+                "tipo_registro",
+                "curso",
+                "nombre_estudiante",
+                "gravedad",
+                "categoria_rice",
+                "medidas_rice",
+                "archivo_generado",
+            ]
+            columnas_mostrar = [c for c in columnas_mostrar if c in df_estudiante.columns]
+            st.dataframe(df_estudiante[columnas_mostrar], use_container_width=True)
 
 
 # =========================================================
-# FORMULARIO ENTREVISTA
+# DATOS DE REGISTRO
 # =========================================================
 
-st.divider()
-st.subheader("Datos de la entrevista")
-tipo_registro = st.selectbox(
-    "Tipo de registro",
-    [
-        "Entrevista participante",
-        "Atención estudiante",
-        "Atención funcionario"
-    ],
-    key=f"tipo_registro_{reset_form}"
-)
-
-fecha = st.date_input(
-    "Fecha entrevista",
-    value=date.today(),
-    format="DD/MM/YYYY",
-    key=f"fecha_{reset_form}"
-)
-
-hora = st.text_input(
-    "Hora entrevista",
-    placeholder="Ej: 17:00 hrs",
-    key=f"hora_{reset_form}"
-)
-
-numero_entrevista = st.text_input(
-    "Número entrevista",
-    placeholder="Ej: 001-2026",
-    key=f"numero_{reset_form}"
-)
+fecha = st.date_input("Fecha entrevista", value=date.today(), format="DD/MM/YYYY", key=f"fecha_{reset_form}")
+hora = st.text_input("Hora entrevista", placeholder="Ej: 17:00 hrs", key=f"hora_{reset_form}")
+numero_entrevista = st.text_input("Número entrevista", placeholder="Ej: 001-2026", key=f"numero_{reset_form}")
 
 if tipo_registro == "Entrevista participante":
-
-    participante_entrevista = st.text_input(
-        "Participante de la entrevista",
-        key=f"participante_entrevista_{reset_form}"
-    )
-
-    vinculo_persona = st.text_input(
-        "Vínculo con el estudiante",
-        key=f"vinculo_persona_{reset_form}"
-    )
-
-    asiste_participante = st.selectbox(
-        "Asiste participante de la entrevista",
-        ["Sí", "No"],
-        key=f"asiste_participante_{reset_form}"
-    )
-
-    asiste_estudiante = st.selectbox(
-        "Asiste estudiante",
-        ["No", "Sí"],
-        key=f"asiste_estudiante_{reset_form}"
-    )
+    participante_entrevista = st.text_input("Participante de la entrevista", key=f"participante_entrevista_{reset_form}")
+    vinculo_persona = st.text_input("Vínculo con el estudiante", key=f"vinculo_persona_{reset_form}")
+    asiste_participante = st.selectbox("Asiste participante de la entrevista", ["Sí", "No"], key=f"asiste_participante_{reset_form}")
+    asiste_estudiante = st.selectbox("Asiste estudiante", ["No", "Sí"], key=f"asiste_estudiante_{reset_form}")
 
 elif tipo_registro == "Atención estudiante":
-
     participante_entrevista = estudiante_sel
-
     vinculo_persona = "Estudiante"
-
     asiste_participante = "Sí"
-
     asiste_estudiante = "Sí"
-
     st.info("Registro de atención individual de estudiante.")
 
-elif tipo_registro == "Atención funcionario":
-
-    participante_entrevista = st.text_input(
-        "Nombre funcionario atendido",
-        key=f"funcionario_atendido_{reset_form}"
-    )
-
-    vinculo_persona = st.text_input(
-        "Cargo o función",
-        key=f"cargo_funcionario_{reset_form}"
-    )
-
+else:
+    participante_entrevista = funcionario_sel
+    vinculo_persona = funcionario_data.get("Cargo", "")
     asiste_participante = "Sí"
-
     asiste_estudiante = "No"
 
+    st.text_input("Funcionario seleccionado", value=participante_entrevista, disabled=True)
+    st.text_input("Cargo o función", value=vinculo_persona, disabled=True)
     st.info("Registro de atención individual de funcionario.")
 
-vinculo_persona = st.text_input(
-    "Vínculo con el estudiante",
-    key=f"vinculo_persona_{reset_form}"
-)
 
-asiste_participante = st.selectbox(
-    "Asiste participante de la entrevista",
-    ["Sí", "No"],
-    key=f"asiste_participante_{reset_form}"
-)
-
-asiste_estudiante = st.selectbox(
-    "Asiste estudiante",
-    ["No", "Sí"],
-    key=f"asiste_estudiante_{reset_form}"
-)
-
+# =========================================================
+# PARTICIPANTES INSTITUCIONALES
+# =========================================================
 
 st.subheader("Participantes institucionales")
 
-nombres_entrevistadores = [
-    e.get("Nombre Entrevistador", "")
-    for e in entrevistadores
-    if e.get("Nombre Entrevistador")
-]
-
+nombres_entrevistadores = [e.get("Nombre Entrevistador", "") for e in entrevistadores if e.get("Nombre Entrevistador")]
 entrevistadores_sel = st.multiselect(
     "Entrevistadores participantes",
     nombres_entrevistadores,
     default=[],
-    key=f"entrevistadores_{reset_form}"
+    key=f"entrevistadores_{reset_form}",
 )
 
 resumen_ent = resumen_personas(
     [e for e in entrevistadores if e.get("Nombre Entrevistador") in entrevistadores_sel],
     "Nombre Entrevistador",
     "Cargo",
-    "Departamento"
+    "Departamento",
 )
 
-
-nombres_responsables = [
-    r.get("Nombre Responsable", "")
-    for r in responsables
-    if r.get("Nombre Responsable")
-]
-
+nombres_responsables = [r.get("Nombre Responsable", "") for r in responsables if r.get("Nombre Responsable")]
 responsables_sel = st.multiselect(
     "Responsables a cargo de ejecutar apoyos",
     nombres_responsables,
     default=[],
-    key=f"responsables_{reset_form}"
+    key=f"responsables_{reset_form}",
 )
 
 resumen_resp = resumen_personas(
@@ -683,16 +546,20 @@ resumen_resp = resumen_personas(
     "Nombre Responsable",
     "Cargo/Rol",
     "Área",
-    "Tipo de Apoyo"
+    "Tipo de Apoyo",
 )
 
 tipo_apoyo_extra = st.text_area(
     "Ajuste o detalle del apoyo a ejecutar",
     value=resumen_resp["apoyos"],
     height=110,
-    key=f"tipo_apoyo_{reset_form}"
+    key=f"tipo_apoyo_{reset_form}",
 )
 
+
+# =========================================================
+# ANTECEDENTES
+# =========================================================
 
 st.subheader("Antecedentes")
 
@@ -700,96 +567,88 @@ antecedentes = st.text_area(
     "Antecedentes breves del caso",
     height=160,
     placeholder="Ej: le pegó a otro compañero y lo insultó",
-    key=f"antecedentes_{reset_form}"
+    key=f"antecedentes_{reset_form}",
 )
 
-mejorar_texto = st.checkbox(
-    "Mejorar automáticamente la redacción institucional",
-    value=True,
-    key=f"mejorar_texto_{reset_form}"
-)
+mejorar_texto = st.checkbox("Mejorar automáticamente la redacción institucional", value=True, key=f"mejorar_texto_{reset_form}")
+incluir_rice = st.checkbox("Analizar antecedentes según RICE", value=True, key=f"incluir_rice_{reset_form}")
 
-incluir_rice = st.checkbox(
-    "Analizar antecedentes según RICE",
-    value=True,
-    key=f"incluir_rice_{reset_form}"
-)
 
+# =========================================================
+# GENERAR DOCUMENTO
+# =========================================================
 
 if st.button("Generar documento y registrar seguimiento", type="primary"):
+    if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
+        if curso_sel == "Seleccione curso" or estudiante_sel == "Seleccione estudiante":
+            st.error("Debe seleccionar curso y estudiante.")
+            st.stop()
 
-    if curso_sel == "Seleccione curso" or estudiante_sel == "Seleccione estudiante":
-        st.error("Debe seleccionar curso y estudiante.")
+    if tipo_registro == "Atención funcionario" and funcionario_sel == "Seleccione funcionario":
+        st.error("Debe seleccionar funcionario.")
+        st.stop()
 
-    else:
-        nombre_estudiante = estudiante.get("Nombre Estudiante", "")
-        run = estudiante.get("RUN", "") or ""
-        curso = curso_sel
+    nombre_estudiante = estudiante.get("Nombre Estudiante", "") if estudiante else ""
+    run = estudiante.get("RUN", "") if estudiante else ""
+    curso = curso_sel
 
-        antecedentes_mejorados = (
-            mejorar_antecedentes(antecedentes)
-            if mejorar_texto
-            else antecedentes
-        )
+    antecedentes_mejorados = mejorar_antecedentes(antecedentes) if mejorar_texto else antecedentes
 
-        rice = (
-            analizar_rice(
-                f"{antecedentes} {antecedentes_mejorados}",
-                contar_intervenciones_previas(nombre_estudiante)
-            )
-            if incluir_rice
-            else {
-                "categoria": ["No solicitado"],
-                "normas": ["No solicitado"],
-                "medidas": [],
-                "alertas": [],
-                "gravedad": "BAJA"
-            }
-        )
+    rice = (
+        analizar_rice(f"{antecedentes} {antecedentes_mejorados}", contar_intervenciones_previas(nombre_estudiante))
+        if incluir_rice
+        else {"categoria": ["No solicitado"], "normas": ["No solicitado"], "medidas": [], "alertas": [], "gravedad": "BAJA"}
+    )
 
-        motivo, analisis, acuerdos = redactar_textos(
-            antecedentes_mejorados,
-            resumen_resp["nombres"],
-            tipo_apoyo_extra,
-            rice
-        )
+    motivo, analisis, acuerdos = redactar_textos(
+        tipo_registro,
+        antecedentes_mejorados,
+        resumen_resp["nombres"],
+        tipo_apoyo_extra,
+        rice,
+    )
 
-        iniciales = obtener_iniciales_usuario()
+    iniciales = obtener_iniciales_usuario()
+    nombre_base = participante_entrevista if tipo_registro == "Atención funcionario" else nombre_estudiante
 
-        nombre_archivo = (
-            f"{limpiar_nombre_archivo(nombre_estudiante)}_"
-            f"{limpiar_nombre_archivo(curso)}_"
-            f"{fecha.strftime('%d-%m-%Y')}_"
-            f"{iniciales}.docx"
-        )
+    nombre_archivo = (
+        f"{limpiar_nombre_archivo(nombre_base)}_"
+        f"{limpiar_nombre_archivo(tipo_registro)}_"
+        f"{fecha.strftime('%d-%m-%Y')}_"
+        f"{iniciales}.docx"
+    )
 
-        archivo = completar_plantilla(
-            {
-                "nombre_estudiante": nombre_estudiante,
-                "curso": curso,
-                "fecha": fecha.strftime("%d.%m.%Y"),
-                "hora": hora,
-                "entrevistadores": resumen_ent["nombres"],
-                "cargos_entrevistadores": resumen_ent["cargos"],
-                "departamentos": resumen_ent["deptos"],
-                "numero_entrevista": numero_entrevista,
-                "asiste_participante": asiste_participante,
-                "asiste_estudiante": asiste_estudiante
-            },
-            motivo,
-            analisis,
-            acuerdos
-            tipo_registro
-        )
+    archivo = completar_plantilla(
+        {
+            "nombre_estudiante": nombre_estudiante,
+            "curso": curso,
+            "fecha": fecha.strftime("%d.%m.%Y"),
+            "hora": hora,
+            "participante_entrevista": participante_entrevista,
+            "vinculo_persona": vinculo_persona,
+            "entrevistadores": resumen_ent["nombres"],
+            "cargos_entrevistadores": resumen_ent["cargos"],
+            "departamentos": resumen_ent["deptos"],
+            "numero_entrevista": numero_entrevista,
+            "asiste_participante": asiste_participante,
+            "asiste_estudiante": asiste_estudiante,
+        },
+        motivo,
+        analisis,
+        acuerdos,
+        tipo_registro,
+    )
 
-        ahora = datetime.now()
+    ahora = datetime.now()
 
-        registrar({
+    registrar(
+        {
             "fecha_registro": ahora.strftime("%d.%m.%Y"),
             "hora_registro": ahora.strftime("%H:%M:%S"),
             "usuario_sistema": st.session_state.get("usuario_id"),
             "nombre_funcionario": st.session_state.get("usuario_nombre"),
             "cargo_funcionario": st.session_state.get("usuario_cargo"),
+            "tipo_registro": tipo_registro,
             "curso": curso,
             "nombre_estudiante": nombre_estudiante,
             "run": run,
@@ -814,18 +673,70 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
             "alertas_rice": "\n".join(rice.get("alertas", [])),
             "gravedad": rice.get("gravedad", "BAJA"),
             "archivo_generado": nombre_archivo,
-            "numero_entrevista": numero_entrevista
-        })
+            "numero_entrevista": numero_entrevista,
+        }
+    )
 
-        st.success("Documento generado y seguimiento registrado correctamente.")
+    st.success("Documento generado y seguimiento registrado correctamente.")
+    st.download_button(
+        "Descargar Word listo para imprimir",
+        archivo,
+        file_name=nombre_archivo,
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
-        st.download_button(
-            "Descargar Word listo para imprimir",
-            archivo,
-            file_name=nombre_archivo,
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
 
+# =========================================================
+# INFORMES INSTITUCIONALES
+# =========================================================
+
+st.divider()
+st.header("Informes institucionales")
+
+df_historial = cargar_historial_dataframe()
+
+tipo_informe = st.selectbox(
+    "Tipo de informe",
+    ["Por estudiante", "Por curso", "General colegio"],
+    key="tipo_informe",
+)
+
+df_filtrado = pd.DataFrame()
+titulo_informe = ""
+
+if df_historial.empty:
+    st.info("Aún no existen registros para generar informes.")
+else:
+    if tipo_informe == "Por estudiante":
+        opciones = sorted(df_historial["nombre_estudiante"].dropna().astype(str).unique().tolist()) if "nombre_estudiante" in df_historial.columns else []
+        informe_estudiante = st.selectbox("Seleccione estudiante", ["Seleccione estudiante"] + opciones, key="informe_estudiante")
+        if informe_estudiante != "Seleccione estudiante":
+            df_filtrado = df_historial[df_historial["nombre_estudiante"].astype(str) == informe_estudiante]
+            titulo_informe = f"Informe por estudiante: {informe_estudiante}"
+
+    elif tipo_informe == "Por curso":
+        opciones = sorted(df_historial["curso"].dropna().astype(str).unique().tolist()) if "curso" in df_historial.columns else []
+        informe_curso = st.selectbox("Seleccione curso", ["Seleccione curso"] + opciones, key="informe_curso")
+        if informe_curso != "Seleccione curso":
+            df_filtrado = df_historial[df_historial["curso"].astype(str) == informe_curso]
+            titulo_informe = f"Informe por curso: {informe_curso}"
+
+    else:
+        df_filtrado = df_historial
+        titulo_informe = "Informe general del colegio"
+
+    if st.button("Generar informe Word"):
+        if df_filtrado.empty:
+            st.warning("No hay registros seleccionados para generar informe.")
+        else:
+            informe = generar_informe_word(df_filtrado, titulo_informe)
+            nombre_informe = f"{limpiar_nombre_archivo(titulo_informe)}_{datetime.now().strftime('%d-%m-%Y')}.docx"
+            st.download_button(
+                "Descargar informe Word",
+                informe,
+                file_name=nombre_informe,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
 
 
 # =========================================================
@@ -845,5 +756,5 @@ if Path(DB_PATH).exists():
             "Descargar base de datos actual",
             archivo,
             file_name="base_datos_pukaray.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
