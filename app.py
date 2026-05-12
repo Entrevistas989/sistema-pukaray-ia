@@ -298,7 +298,6 @@ def completar_plantilla(datos, motivo, analisis, acuerdos, tipo_registro):
     bio.seek(0)
     return bio
 def generar_folio():
-
     df = cargar_historial_dataframe()
 
     if df.empty or "numero_entrevista" not in df.columns:
@@ -307,9 +306,7 @@ def generar_folio():
     numeros = []
 
     for valor in df["numero_entrevista"].dropna():
-
         valor = str(valor).strip()
-
         solo_num = "".join(filter(str.isdigit, valor))
 
         if solo_num:
@@ -319,30 +316,6 @@ def generar_folio():
         return "000001"
 
     siguiente = max(numeros) + 1
-
-    return str(siguiente).zfill(6)def generar_folio():
-
-    df = cargar_historial_dataframe()
-
-    if df.empty or "numero_entrevista" not in df.columns:
-        return "000001"
-
-    numeros = []
-
-    for valor in df["numero_entrevista"].dropna():
-
-        valor = str(valor).strip()
-
-        solo_num = "".join(filter(str.isdigit, valor))
-
-        if solo_num:
-            numeros.append(int(solo_num))
-
-    if not numeros:
-        return "000001"
-
-    siguiente = max(numeros) + 1
-
     return str(siguiente).zfill(6)
 
 
@@ -539,17 +512,68 @@ fecha = st.date_input(
     "Fecha entrevista",
     value=date.today(),
     format="DD/MM/YYYY",
-    key=f"fecha_{reset_form}"
+    key=f"fecha_{reset_form}",
 )
 
 hora = st.text_input(
     "Hora entrevista",
     placeholder="Ej: 17:00 hrs",
-    key=f"hora_{reset_form}"
+    key=f"hora_{reset_form}",
 )
-numero_entrevista = generar_folio()
 
-st.info(f"Folio automático asignado: {numero_entrevista}")
+# =========================================================
+# DATOS SEGÚN TIPO DE REGISTRO
+# =========================================================
+
+if tipo_registro == "Entrevista participante":
+    participante_entrevista = st.text_input(
+        "Participante de la entrevista",
+        key=f"participante_entrevista_{reset_form}",
+    )
+
+    vinculo_persona = st.text_input(
+        "Vínculo con el estudiante",
+        key=f"vinculo_persona_{reset_form}",
+    )
+
+    asiste_participante = st.selectbox(
+        "Asiste participante de la entrevista",
+        ["Sí", "No"],
+        key=f"asiste_participante_{reset_form}",
+    )
+
+    asiste_estudiante = st.selectbox(
+        "Asiste estudiante",
+        ["No", "Sí"],
+        key=f"asiste_estudiante_{reset_form}",
+    )
+
+elif tipo_registro == "Atención estudiante":
+    participante_entrevista = estudiante_sel
+    vinculo_persona = "Estudiante"
+    asiste_participante = "Sí"
+    asiste_estudiante = "Sí"
+    st.info("Registro de atención individual de estudiante.")
+
+else:
+    participante_entrevista = funcionario_sel
+    vinculo_persona = funcionario_data.get("Cargo", "")
+    asiste_participante = "Sí"
+    asiste_estudiante = "No"
+
+    st.text_input(
+        "Funcionario seleccionado",
+        value=participante_entrevista,
+        disabled=True,
+    )
+
+    st.text_input(
+        "Cargo o función",
+        value=vinculo_persona,
+        disabled=True,
+    )
+
+    st.info("Registro de atención individual de funcionario.")
 
 # =========================================================
 # PARTICIPANTES INSTITUCIONALES
