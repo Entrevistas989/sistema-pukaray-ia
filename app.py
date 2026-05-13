@@ -1188,48 +1188,145 @@ st.header("Informes institucionales")
 
 df_historial = cargar_historial_dataframe()
 
-tipo_informe = st.selectbox(
-    "Tipo de informe",
-    ["Por estudiante", "Por curso", "General colegio"],
-    key="tipo_informe",
-)
-
-df_filtrado = pd.DataFrame()
-titulo_informe = ""
-
 if df_historial.empty:
     st.info("Aún no existen registros para generar informes.")
+
 else:
-    if tipo_informe == "Por estudiante":
-        opciones = sorted(df_historial["nombre_estudiante"].dropna().astype(str).unique().tolist()) if "nombre_estudiante" in df_historial.columns else []
-        informe_estudiante = st.selectbox("Seleccione estudiante", ["Seleccione estudiante"] + opciones, key="informe_estudiante")
-        if informe_estudiante != "Seleccione estudiante":
-            df_filtrado = df_historial[df_historial["nombre_estudiante"].astype(str) == informe_estudiante]
-            titulo_informe = f"Informe por estudiante: {informe_estudiante}"
+    tipo_informe_base = st.selectbox(
+        "Tipo de informe institucional",
+        [
+            "Seleccione tipo de informe",
+            "Informe de estudiantes / participantes",
+            "Informe de funcionarios",
+            "Informe general colegio"
+        ],
+        key="tipo_informe_base",
+    )
 
-    elif tipo_informe == "Por curso":
-        opciones = sorted(df_historial["curso"].dropna().astype(str).unique().tolist()) if "curso" in df_historial.columns else []
-        informe_curso = st.selectbox("Seleccione curso", ["Seleccione curso"] + opciones, key="informe_curso")
-        if informe_curso != "Seleccione curso":
-            df_filtrado = df_historial[df_historial["curso"].astype(str) == informe_curso]
-            titulo_informe = f"Informe por curso: {informe_curso}"
+    df_filtrado = pd.DataFrame()
+    titulo_informe = ""
 
-    else:
+    if tipo_informe_base == "Seleccione tipo de informe":
+        st.info("Seleccione el tipo de informe que desea generar.")
+
+    elif tipo_informe_base == "Informe de estudiantes / participantes":
+
+        df_est = df_historial[
+            df_historial["tipo_registro"].isin(
+                ["Entrevista participante", "Atención estudiante"]
+            )
+        ] if "tipo_registro" in df_historial.columns else pd.DataFrame()
+
+        subtipo = st.selectbox(
+            "Detalle del informe",
+            [
+                "Seleccione detalle",
+                "Por estudiante",
+                "Por curso",
+                "Todos los estudiantes / participantes"
+            ],
+            key="subtipo_informe_estudiante",
+        )
+
+        if df_est.empty:
+            st.warning("No existen registros de estudiantes o participantes para informar.")
+
+        elif subtipo == "Por estudiante":
+            opciones = sorted(
+                df_est["nombre_estudiante"].dropna().astype(str).unique().tolist()
+            ) if "nombre_estudiante" in df_est.columns else []
+
+            informe_estudiante = st.selectbox(
+                "Seleccione estudiante",
+                ["Seleccione estudiante"] + opciones,
+                key="informe_estudiante"
+            )
+
+            if informe_estudiante != "Seleccione estudiante":
+                df_filtrado = df_est[df_est["nombre_estudiante"].astype(str) == informe_estudiante]
+                titulo_informe = f"Informe por estudiante: {informe_estudiante}"
+
+        elif subtipo == "Por curso":
+            opciones = sorted(
+                df_est["curso"].dropna().astype(str).unique().tolist()
+            ) if "curso" in df_est.columns else []
+
+            informe_curso = st.selectbox(
+                "Seleccione curso",
+                ["Seleccione curso"] + opciones,
+                key="informe_curso"
+            )
+
+            if informe_curso != "Seleccione curso":
+                df_filtrado = df_est[df_est["curso"].astype(str) == informe_curso]
+                titulo_informe = f"Informe por curso: {informe_curso}"
+
+        elif subtipo == "Todos los estudiantes / participantes":
+            df_filtrado = df_est
+            titulo_informe = "Informe general de estudiantes y participantes"
+
+    elif tipo_informe_base == "Informe de funcionarios":
+
+        df_func = df_historial[
+            df_historial["tipo_registro"] == "Atención funcionario"
+        ] if "tipo_registro" in df_historial.columns else pd.DataFrame()
+
+        subtipo_func = st.selectbox(
+            "Detalle del informe de funcionarios",
+            [
+                "Seleccione detalle",
+                "Por funcionario",
+                "Todos los funcionarios"
+            ],
+            key="subtipo_informe_funcionario",
+        )
+
+        if df_func.empty:
+            st.warning("No existen registros de funcionarios para informar.")
+
+        elif subtipo_func == "Por funcionario":
+            opciones = sorted(
+                df_func["participante_entrevista"].dropna().astype(str).unique().tolist()
+            ) if "participante_entrevista" in df_func.columns else []
+
+            informe_funcionario = st.selectbox(
+                "Seleccione funcionario",
+                ["Seleccione funcionario"] + opciones,
+                key="informe_funcionario"
+            )
+
+            if informe_funcionario != "Seleccione funcionario":
+                df_filtrado = df_func[
+                    df_func["participante_entrevista"].astype(str) == informe_funcionario
+                ]
+                titulo_informe = f"Informe por funcionario: {informe_funcionario}"
+
+        elif subtipo_func == "Todos los funcionarios":
+            df_filtrado = df_func
+            titulo_informe = "Informe general de funcionarios"
+
+    elif tipo_informe_base == "Informe general colegio":
         df_filtrado = df_historial
         titulo_informe = "Informe general del colegio"
 
-    if st.button("Generar informe Word"):
-        if df_filtrado.empty:
-            st.warning("No hay registros seleccionados para generar informe.")
-        else:
-            informe = generar_informe_word(df_filtrado, titulo_informe)
-            nombre_informe = f"{limpiar_nombre_archivo(titulo_informe)}_{datetime.now().strftime('%d-%m-%Y')}.docx"
-            st.download_button(
-                "Descargar informe Word",
-                informe,
-                file_name=nombre_informe,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            )
+    if tipo_informe_base != "Seleccione tipo de informe":
+        if st.button("Generar informe Word"):
+            if df_filtrado.empty:
+                st.warning("No hay registros seleccionados para generar informe.")
+            else:
+                informe = generar_informe_word(df_filtrado, titulo_informe)
+
+                nombre_informe = (
+                    f"{limpiar_nombre_archivo(titulo_informe)}_"
+                    f"{datetime.now().strftime('%d-%m-%Y')}.docx"
+                )
+
+                st.download_button(
+                    "Descargar informe Word",
+                    informe,
+                    file_name=nombre_informe,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
 
 
 # =========================================================
