@@ -189,6 +189,41 @@ def seleccionar_plantilla(tipo_registro):
     return TEMPLATE_FUNCIONARIO
 
 
+def detectar_reincidencia_institucional(cantidad_intervenciones_previas):
+    if cantidad_intervenciones_previas >= 5:
+        return {
+            "nivel": "ALTA",
+            "texto": (
+                "Se advierte reiteración significativa de intervenciones previas asociadas al estudiante. "
+                "Se recomienda seguimiento prioritario, revisión del caso por el equipo de convivencia escolar "
+                "y evaluación de progresión de medidas formativas, disciplinarias o de apoyo según corresponda."
+            )
+        }
+
+    if cantidad_intervenciones_previas >= 2:
+        return {
+            "nivel": "MODERADA",
+            "texto": (
+                "Se observa registro previo de intervenciones asociadas al estudiante. "
+                "Se sugiere mantener seguimiento institucional, reforzar acuerdos y monitorear la evolución del caso."
+            )
+        }
+
+    if cantidad_intervenciones_previas == 1:
+        return {
+            "nivel": "BAJA",
+            "texto": (
+                "Existe un antecedente previo registrado, por lo que se recomienda seguimiento preventivo "
+                "y observación de la evolución conductual o formativa."
+            )
+        }
+
+    return {
+        "nivel": "SIN REGISTROS PREVIOS",
+        "texto": ""
+    }
+
+
 def detectar_acuerdos_inteligentes(texto, tipo_registro, gravedad):
     texto_base = normalizar_clave(texto).replace("_", " ")
     acuerdos_extra = []
@@ -258,7 +293,7 @@ def detectar_acuerdos_inteligentes(texto, tipo_registro, gravedad):
     return salida
 
 
-def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
+def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice, intervenciones_previas=0):
 
     gravedad = str(rice.get("gravedad", "BAJA")).upper()
     categorias = rice.get("categoria", []) or []
@@ -269,6 +304,10 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
     categorias_txt = "; ".join([str(x) for x in categorias]) if categorias else "Sin clasificación automática específica."
     normas_txt = "; ".join([str(x) for x in normas]) if normas else "Sin norma específica asociada automáticamente."
     requiere_seguimiento_prioritario = gravedad in ["ALTA", "GRAVE", "CRÍTICA", "CRITICA"]
+
+    reincidencia = detectar_reincidencia_institucional(intervenciones_previas)
+    texto_reincidencia = reincidencia.get("texto", "")
+    nivel_reincidencia = reincidencia.get("nivel", "SIN REGISTROS PREVIOS")
 
     acuerdos_inteligentes = detectar_acuerdos_inteligentes(
         antecedentes_mejorados,
@@ -374,6 +413,11 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
             "2. Se acuerda mantener canales formales de comunicación y coordinación según corresponda.",
             "3. Se reforzarán criterios de buen trato, resguardo institucional y cumplimiento de funciones o protocolos relacionados.",
         ]
+
+    if texto_reincidencia:
+        acuerdos.append("ANTECEDENTES DE REINCIDENCIA O SEGUIMIENTO:")
+        acuerdos.append(f"   • {texto_reincidencia}")
+        acuerdos.append(f"   • Nivel referencial de reincidencia institucional: {nivel_reincidencia}.")
 
     if acuerdos_inteligentes:
         acuerdos.append("ACUERDOS ESPECÍFICOS SEGÚN ANTECEDENTES DEL CASO:")
@@ -859,12 +903,15 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
         else {"categoria": ["No solicitado"], "normas": ["No solicitado"], "medidas": [], "alertas": [], "gravedad": "BAJA"}
     )
 
+    intervenciones_previas = contar_intervenciones_previas(nombre_estudiante)
+
     motivo, analisis, acuerdos = redactar_textos(
         tipo_registro,
         antecedentes_mejorados,
         resumen_resp["nombres"],
         tipo_apoyo_extra,
         rice,
+        intervenciones_previas,
     )
 
     iniciales = obtener_iniciales_usuario()
@@ -933,6 +980,8 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
             "gravedad": rice.get("gravedad", "BAJA"),
             "archivo_generado": nombre_archivo,
             "numero_entrevista": numero_entrevista,
+            "intervenciones_previas": intervenciones_previas,
+            "nivel_reincidencia": detectar_reincidencia_institucional(intervenciones_previas).get("nivel", ""),
         }
     )
 
