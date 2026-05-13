@@ -1,46 +1,61 @@
 {
   "wtobar": {
     "nombre": "William Tobar",
-    "password": "Wt2026",
+    "password": "Wt2026*",
     "cargo": "Convivencia Escolar",
-    "permisos": ["crear", "editar", "ver_historial", "estadisticas", "administrar"]
+    "permisos": [
+      "crear",
+      "editar",
+      "ver_historial",
+      "estadisticas",
+      "administrar"
+    ]
   },
   "scanales": {
     "nombre": "Sandra Canales",
-    "password": "Sc2026",
+    "password": "Sc2026*",
     "cargo": "Profesora Jefe",
-    "permisos": ["crear", "ver_historial"]
+    "permisos": [
+      "crear",
+      "ver_historial"
+    ]
   },
   "cvasquez": {
     "nombre": "Claudia Vásquez",
-    "password": "Cv2026",
+    "password": "Cv2026*",
     "cargo": "Profesora",
-    "permisos": ["crear"]
+    "permisos": [
+      "crear"
+    ]
+  },
+  "javier.olave": {
+    "nombre": "Javier Olave",
+    "password": "Pukaray2026_JO",
+    "cargo": "Funcionario",
+    "permisos": [
+      "crear",
+      "editar",
+      "ver_historial"
+    ]
+  },
+  "marcia.catalan": {
+    "nombre": "Marcia Catalán",
+    "password": "Pukaray2026_MC",
+    "cargo": "Funcionaria",
+    "permisos": [
+      "crear",
+      "editar",
+      "ver_historial"
+    ]
+  },
+  "oclive.saavedra": {
+    "nombre": "Oclive Saavedra",
+    "password": "Pukaray2026_OS",
+    "cargo": "Psicólogo",
+    "permisos": [
+      "crear",
+      "editar",
+      "ver_historial"
+    ]
   }
-}
-{
-    "javier.olave": {
-        "password": "Pukaray2026_JO",
-        "nombre": "Javier Olave",
-        "cargo": "Funcionario",
-        "permisos": [
-            "crear"
-        ]
-    },
-    "marcia.catalan": {
-        "password": "Pukaray2026_MC",
-        "nombre": "Marcia Catalán",
-        "cargo": "Funcionaria",
-        "permisos": [
-            "crear"
-        ]
-    },
-    "oclive.saavedra": {
-        "password": "Pukaray2026_OS",
-        "nombre": "Oclive Saavedra",
-        "cargo": "Funcionario",
-        "permisos": [
-            "crear"
-        ]
-    }
 }
