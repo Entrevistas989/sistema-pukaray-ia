@@ -189,6 +189,57 @@ def seleccionar_plantilla(tipo_registro):
     return TEMPLATE_FUNCIONARIO
 
 
+def clasificar_caso(texto, tipo_registro):
+    texto_base = normalizar_clave(texto).replace("_", " ")
+
+    categorias_estudiante = {
+        "Violencia física": ["golpe", "patada", "zancadilla", "agresion", "pega", "empuja"],
+        "Violencia verbal": ["insulto", "garabato", "ofensa", "amenaza", "burla"],
+        "Conflicto entre pares": ["discusion", "conflicto", "problema", "pelea"],
+        "Bullying": ["bullying", "hostigamiento", "amedrentamiento", "intimidacion"],
+        "Ciberbullying": ["whatsapp", "instagram", "redes", "mensaje", "foto", "video"],
+        "Desregulación emocional": ["crisis", "llanto", "ansiedad", "desregulacion", "impulsivo"],
+        "Conducta disruptiva": ["interrumpe", "disruptivo", "molesta", "ruidos"],
+        "Incumplimiento de normas": ["incumple", "desafiante", "desobediencia"],
+        "Daño a infraestructura": ["rayo", "destruye", "rompe", "daño"],
+        "Riesgo socioemocional": ["autolesion", "suicida", "depresion"],
+        "Ausentismo / atrasos": ["inasistencia", "atraso", "ausencia"],
+        "Situación familiar": ["familia", "hogar", "apoderado"],
+        "Vulneración de derechos": ["abandono", "maltrato", "vulneracion"],
+        "Consumo o porte de sustancias": ["droga", "marihuana", "alcohol", "medicamento"],
+        "Connotación sexual": ["tocacion", "sexual", "acoso"],
+    }
+
+    categorias_funcionario = {
+        "Convivencia laboral": ["conflicto", "discusion", "convivencia"],
+        "Conflicto entre funcionarios": ["funcionario", "docente", "equipo"],
+        "Coordinación institucional": ["coordinacion", "organizacion", "procedimiento"],
+        "Situación administrativa": ["licencia", "inasistencia", "horario"],
+        "Clima laboral": ["mal ambiente", "tension", "hostilidad"],
+        "Maltrato laboral": ["hostigamiento", "maltrato", "acoso laboral"],
+        "Comunicación institucional": ["comunicacion", "informacion"],
+        "Incumplimiento de funciones": ["incumplimiento", "funciones", "responsabilidad"],
+        "Situación de apoderados": ["apoderado", "reclamo"],
+        "Resguardo institucional": ["denuncia", "protocolo", "resguardo"],
+    }
+
+    categorias_detectadas = []
+
+    if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
+        mapa = categorias_estudiante
+    else:
+        mapa = categorias_funcionario
+
+    for categoria, palabras in mapa.items():
+        if any(p in texto_base for p in palabras):
+            categorias_detectadas.append(categoria)
+
+    if not categorias_detectadas:
+        categorias_detectadas.append("Otro")
+
+    return categorias_detectadas
+
+
 def detectar_riesgo_institucional(texto, tipo_registro):
     texto_base = normalizar_clave(texto).replace("_", " ")
 
@@ -404,11 +455,19 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
 
     gravedad = str(rice.get("gravedad", "BAJA")).upper()
     categorias = rice.get("categoria", []) or []
+
+    clasificaciones = clasificar_caso(
+        antecedentes_mejorados,
+        tipo_registro
+    )
+
     normas = rice.get("normas", []) or []
     medidas = rice.get("medidas", []) or []
     alertas = rice.get("alertas", []) or []
 
     categorias_txt = "; ".join([str(x) for x in categorias]) if categorias else "Sin clasificación automática específica."
+    clasificacion_txt = "; ".join(clasificaciones)
+
     normas_txt = "; ".join([str(x) for x in normas]) if normas else "Sin norma específica asociada automáticamente."
     requiere_seguimiento_prioritario = gravedad in ["ALTA", "GRAVE", "CRÍTICA", "CRITICA"]
 
@@ -440,8 +499,9 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
             "ANÁLISIS INSTITUCIONAL",
             "1. La entrevista se orienta a entregar información clara al participante, recoger antecedentes complementarios y favorecer la coordinación entre familia y establecimiento.",
             "2. El análisis considera el impacto de los hechos en la convivencia escolar, el proceso formativo del estudiante y la necesidad de acompañamiento institucional.",
-            f"3. Según revisión referencial del RICE, la situación se vincula con: {categorias_txt}",
-            f"4. Normativa o criterios institucionales asociados: {normas_txt}",
+            f"3. Clasificación automática del caso: {clasificacion_txt}",
+            f"4. Según revisión referencial del RICE, la situación se vincula con: {categorias_txt}",
+            f"5. Normativa o criterios institucionales asociados: {normas_txt}",
         ]
 
         if requiere_seguimiento_prioritario:
@@ -473,8 +533,9 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
             "ANÁLISIS FORMATIVO",
             "1. La intervención se centra en que el estudiante reconozca los hechos abordados, sus consecuencias y el impacto que pueden generar en otros integrantes de la comunidad escolar.",
             "2. Se refuerza la importancia del autocontrol, la responsabilidad personal, la empatía y el cumplimiento de las normas de convivencia.",
-            f"3. Según revisión referencial del RICE, la situación se vincula con: {categorias_txt}",
-            f"4. Normativa o criterios institucionales asociados: {normas_txt}",
+            f"3. Clasificación automática del caso: {clasificacion_txt}",
+            f"4. Según revisión referencial del RICE, la situación se vincula con: {categorias_txt}",
+            f"5. Normativa o criterios institucionales asociados: {normas_txt}",
         ]
 
         if requiere_seguimiento_prioritario:
@@ -1094,6 +1155,7 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
             "motivo": motivo,
             "analisis": analisis,
             "acuerdos": acuerdos,
+            "clasificacion_caso": "\n".join(clasificar_caso(antecedentes_mejorados, tipo_registro)),
             "categoria_rice": "\n".join(rice.get("categoria", [])),
             "normas_rice": "\n".join(rice.get("normas", [])),
             "medidas_rice": "\n".join(rice.get("medidas", [])),
