@@ -189,6 +189,113 @@ def seleccionar_plantilla(tipo_registro):
     return TEMPLATE_FUNCIONARIO
 
 
+def detectar_riesgo_institucional(texto, tipo_registro):
+    texto_base = normalizar_clave(texto).replace("_", " ")
+
+    alertas = []
+    acciones = []
+    nivel = "BAJO"
+
+    def contiene(*palabras):
+        return any(p in texto_base for p in palabras)
+
+    if contiene("suicidio", "suicida", "matarme", "quitarme la vida", "autolesion", "cortarse", "cortes"):
+        nivel = "CRÍTICO"
+        alertas.append("Posible riesgo de autolesión o ideación suicida.")
+        acciones += [
+            "Activar protocolo institucional correspondiente de manera inmediata.",
+            "Informar a dirección y equipo de convivencia escolar.",
+            "Contactar al apoderado o adulto responsable según procedimiento.",
+            "Derivar a apoyo especializado y dejar registro formal de las acciones realizadas.",
+        ]
+
+    if contiene("arma", "cuchillo", "pistola", "amenaza de muerte", "matar", "balazo", "apuñalar"):
+        nivel = "CRÍTICO"
+        alertas.append("Posible riesgo grave asociado a amenaza, arma o daño severo.")
+        acciones += [
+            "Informar inmediatamente a dirección.",
+            "Aplicar medidas de resguardo para los integrantes de la comunidad educativa.",
+            "Evaluar activación de protocolo y denuncia según corresponda.",
+        ]
+
+    if contiene("abuso", "sexual", "tocacion", "tocaciones", "violacion", "acoso sexual"):
+        nivel = "CRÍTICO"
+        alertas.append("Posible antecedente asociado a vulneración grave o situación de connotación sexual.")
+        acciones += [
+            "Activar protocolo de vulneración o hechos de connotación sexual según corresponda.",
+            "Resguardar confidencialidad y evitar revictimización.",
+            "Informar a dirección y realizar derivaciones o denuncias conforme a normativa vigente.",
+        ]
+
+    if contiene("droga", "marihuana", "cocaina", "pastillas", "medicamento", "alcohol", "consumo", "trafico"):
+        if nivel != "CRÍTICO":
+            nivel = "ALTO"
+        alertas.append("Posible antecedente asociado a consumo, porte o distribución de sustancias.")
+        acciones += [
+            "Aplicar protocolo institucional asociado a alcohol, drogas o sustancias.",
+            "Informar a dirección y convivencia escolar.",
+            "Citar a apoderado si corresponde y dejar registro de antecedentes.",
+        ]
+
+    if contiene("golpiza", "lesion", "sangre", "hospital", "urgencia", "fractura", "asfixia", "ahorc"):
+        if nivel != "CRÍTICO":
+            nivel = "ALTO"
+        alertas.append("Posible agresión física con afectación relevante o riesgo para la integridad.")
+        acciones += [
+            "Adoptar medidas de resguardo inmediatas.",
+            "Informar a apoderados y equipo directivo según corresponda.",
+            "Evaluar derivación a centro asistencial o activación de protocolo.",
+        ]
+
+    if contiene("bullying", "ciberbullying", "hostigamiento", "acoso escolar", "amedrentamiento", "intimidacion"):
+        if nivel not in ["CRÍTICO", "ALTO"]:
+            nivel = "MEDIO"
+        alertas.append("Posible situación de acoso escolar, hostigamiento o intimidación.")
+        acciones += [
+            "Recabar antecedentes complementarios.",
+            "Evaluar aplicación de protocolo de acoso escolar.",
+            "Realizar seguimiento con estudiantes involucrados y curso si corresponde.",
+        ]
+
+    if contiene("desregulacion severa", "crisis severa", "se escapa", "fuga", "se arranca", "incontrolable"):
+        if nivel not in ["CRÍTICO", "ALTO"]:
+            nivel = "MEDIO"
+        alertas.append("Posible desregulación severa o situación que requiere resguardo especial.")
+        acciones += [
+            "Aplicar plan de acompañamiento o contención según procedimiento interno.",
+            "Coordinar apoyo con equipo correspondiente.",
+            "Registrar factores desencadenantes y medidas utilizadas.",
+        ]
+
+    # Reglas específicas para funcionario
+    if tipo_registro == "Atención funcionario" and contiene("maltrato", "agresion", "amenaza", "hostigamiento", "acoso laboral"):
+        if nivel not in ["CRÍTICO", "ALTO"]:
+            nivel = "MEDIO"
+        alertas.append("Posible situación que afecta convivencia interna o clima laboral.")
+        acciones += [
+            "Mantener registro formal y resguardo de confidencialidad.",
+            "Informar a equipo directivo si corresponde.",
+            "Evaluar medidas de coordinación interna o activación de procedimientos institucionales.",
+        ]
+
+    # Eliminar duplicados
+    alertas_limpias = []
+    for alerta in alertas:
+        if alerta not in alertas_limpias:
+            alertas_limpias.append(alerta)
+
+    acciones_limpias = []
+    for accion in acciones:
+        if accion not in acciones_limpias:
+            acciones_limpias.append(accion)
+
+    return {
+        "nivel": nivel,
+        "alertas": alertas_limpias,
+        "acciones": acciones_limpias,
+    }
+
+
 def detectar_reincidencia_institucional(cantidad_intervenciones_previas):
     if cantidad_intervenciones_previas >= 5:
         return {
@@ -309,6 +416,11 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
     texto_reincidencia = reincidencia.get("texto", "")
     nivel_reincidencia = reincidencia.get("nivel", "SIN REGISTROS PREVIOS")
 
+    riesgo = detectar_riesgo_institucional(antecedentes_mejorados, tipo_registro)
+    nivel_riesgo = riesgo.get("nivel", "BAJO")
+    alertas_riesgo = riesgo.get("alertas", [])
+    acciones_riesgo = riesgo.get("acciones", [])
+
     acuerdos_inteligentes = detectar_acuerdos_inteligentes(
         antecedentes_mejorados,
         tipo_registro,
@@ -413,6 +525,15 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
             "2. Se acuerda mantener canales formales de comunicación y coordinación según corresponda.",
             "3. Se reforzarán criterios de buen trato, resguardo institucional y cumplimiento de funciones o protocolos relacionados.",
         ]
+
+    if alertas_riesgo:
+        acuerdos.append("ALERTAS DE RIESGO INSTITUCIONAL:")
+        acuerdos += [f"   • {x}" for x in alertas_riesgo]
+        acuerdos.append(f"   • Nivel referencial de riesgo institucional: {nivel_riesgo}.")
+
+    if acciones_riesgo:
+        acuerdos.append("ACCIONES SUGERIDAS FRENTE AL RIESGO DETECTADO:")
+        acuerdos += [f"   • {x}" for x in acciones_riesgo]
 
     if texto_reincidencia:
         acuerdos.append("ANTECEDENTES DE REINCIDENCIA O SEGUIMIENTO:")
@@ -982,6 +1103,8 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
             "numero_entrevista": numero_entrevista,
             "intervenciones_previas": intervenciones_previas,
             "nivel_reincidencia": detectar_reincidencia_institucional(intervenciones_previas).get("nivel", ""),
+            "nivel_riesgo": detectar_riesgo_institucional(antecedentes_mejorados, tipo_registro).get("nivel", ""),
+            "alertas_riesgo": "\n".join(detectar_riesgo_institucional(antecedentes_mejorados, tipo_registro).get("alertas", [])),
         }
     )
 
