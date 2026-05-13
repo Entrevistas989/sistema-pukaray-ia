@@ -599,7 +599,13 @@ st.subheader("Datos de la entrevista")
 
 tipo_registro = st.selectbox(
     "Tipo de registro",
-    ["Entrevista participante", "Atención estudiante", "Atención funcionario"],
+    [
+        "Seleccione tipo entrevista",
+        "Entrevista participante",
+        "Atención estudiante",
+        "Atención funcionario"
+    ],
+    index=0,
     key=f"tipo_registro_{reset_form}",
 )
 
@@ -610,6 +616,10 @@ estudiante_sel = "No aplica"
 estudiante = {}
 funcionario_sel = "Seleccione funcionario"
 funcionario_data = {}
+
+if tipo_registro == "Seleccione tipo entrevista":
+    st.warning("Debe seleccionar un tipo de entrevista para continuar.")
+    st.stop()
 
 if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
     cursos = sorted({str(e.get("Curso", "")).strip() for e in estudiantes if str(e.get("Curso", "")).strip()})
@@ -666,6 +676,8 @@ if tipo_registro in ["Entrevista participante", "Atención estudiante"]:
             df_historial["nombre_estudiante"].fillna("").astype(str).str.strip().str.lower()
             == str(estudiante_sel).strip().lower()
         ]
+
+        df_estudiante = df_estudiante.drop_duplicates()
         if df_estudiante.empty:
             st.info("No existen intervenciones previas registradas para este estudiante.")
         else:
