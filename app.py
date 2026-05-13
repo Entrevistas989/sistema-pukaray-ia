@@ -143,6 +143,22 @@ st.markdown(
 )
 
 
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    div[data-testid="stToolbar"] {display: none !important;}
+    div[data-testid="stDecoration"] {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+    button[kind="header"] {display: none !important;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 def normalizar(texto):
     texto = str(texto or "").strip()
     texto = unicodedata.normalize("NFD", texto)
