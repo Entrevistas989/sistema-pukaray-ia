@@ -31,6 +31,117 @@ st.set_page_config(
     layout="centered"
 )
 
+st.markdown(
+    """
+    <style>
+    /* ESTILO INSTITUCIONAL PUKARAY */
+
+    .stApp {
+        background: linear-gradient(180deg, #f5f3eb 0%, #ffffff 42%);
+    }
+
+    h1, h2, h3 {
+        color: #1a542a !important;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    label, .stMarkdown, .stTextInput label, .stSelectbox label, .stTextArea label {
+        color: #1a542a !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="stVerticalBlock"] > div:has(> .element-container) {
+        border-radius: 14px;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: #f5f3eb;
+    }
+
+    div[data-testid="stForm"], div[data-testid="stExpander"] {
+        border: 1px solid #d8d2c1;
+        border-radius: 14px;
+        background-color: #fffdf8;
+    }
+
+    .stButton > button {
+        background-color: #1a542a !important;
+        color: white !important;
+        border-radius: 10px !important;
+        border: none !important;
+        font-weight: 700 !important;
+        padding: 0.55rem 1rem !important;
+    }
+
+    .stButton > button:hover {
+        background-color: #2d7340 !important;
+        color: white !important;
+    }
+
+    .stDownloadButton > button {
+        background-color: #6b1e11 !important;
+        color: white !important;
+        border-radius: 10px !important;
+        border: none !important;
+        font-weight: 700 !important;
+    }
+
+    .stAlert {
+        border-radius: 12px !important;
+    }
+
+    hr {
+        border: none;
+        border-top: 2px solid #d8d2c1;
+        margin: 1.5rem 0;
+    }
+
+    div[data-baseweb="select"] > div {
+        border-radius: 10px !important;
+        border-color: #b9b09c !important;
+        background-color: #fffdf8 !important;
+    }
+
+    input, textarea {
+        border-radius: 10px !important;
+        border-color: #b9b09c !important;
+        background-color: #fffdf8 !important;
+    }
+
+    .pukaray-card {
+        background-color: #fffdf8;
+        border-left: 8px solid #1a542a;
+        padding: 18px;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        margin-bottom: 14px;
+    }
+
+    .pukaray-subcard {
+        background-color: #f5f3eb;
+        border: 1px solid #d8d2c1;
+        padding: 14px;
+        border-radius: 12px;
+        margin: 10px 0 16px 0;
+    }
+
+    .pukaray-title {
+        color: #1a542a;
+        margin: 0;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .pukaray-subtitle {
+        color: #6b1e11;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 def normalizar(texto):
     texto = str(texto or "").strip()
@@ -788,9 +899,9 @@ with col1:
         st.image(LOGO_PATH, width=120)
     st.markdown(
         """
-        <div style="background-color:#f5f3eb;border-left:8px solid #1a542a;padding:16px;border-radius:10px;">
-            <h2 style="margin:0;color:#1a542a;">Sistema Pukaray IA</h2>
-            <p style="margin:4px 0 0 0;color:#6b1e11;">Entrevistas · RICE · Seguimiento institucional</p>
+        <div class="pukaray-card">
+            <div class="pukaray-title">Sistema Pukaray IA</div>
+            <div class="pukaray-subtitle">Entrevistas · RICE · Seguimiento institucional · Informes</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -822,6 +933,7 @@ df_historial = cargar_historial_dataframe()
 
 st.divider()
 st.subheader("Datos de la entrevista")
+st.markdown('<div class="pukaray-subcard">Seleccione el tipo de registro y complete los antecedentes principales de la atención.</div>', unsafe_allow_html=True)
 
 tipo_registro = st.selectbox(
     "Tipo de registro",
@@ -836,6 +948,7 @@ tipo_registro = st.selectbox(
 )
 
 st.subheader("Selección según tipo de registro")
+st.markdown('<div class="pukaray-subcard">La selección cambiará automáticamente si corresponde a estudiante, participante o funcionario.</div>', unsafe_allow_html=True)
 
 curso_sel = "No aplica"
 estudiante_sel = "No aplica"
@@ -1002,6 +1115,7 @@ else:
 # =========================================================
 
 st.subheader("Participantes institucionales")
+st.markdown('<div class="pukaray-subcard">Seleccione entrevistadores y responsables de apoyo solo cuando corresponda.</div>', unsafe_allow_html=True)
 
 nombres_entrevistadores = [e.get("Nombre Entrevistador", "") for e in entrevistadores if e.get("Nombre Entrevistador")]
 entrevistadores_sel = st.multiselect(
@@ -1047,6 +1161,7 @@ tipo_apoyo_extra = st.text_area(
 # =========================================================
 
 st.subheader("Antecedentes")
+st.markdown('<div class="pukaray-subcard">Ingrese el relato breve del caso. El sistema mejorará la redacción y aplicará análisis RICE si está activado.</div>', unsafe_allow_html=True)
 
 antecedentes = st.text_area(
     "Antecedentes breves del caso",
@@ -1185,6 +1300,7 @@ if st.button("Generar documento y registrar seguimiento", type="primary"):
 
 st.divider()
 st.header("Informes institucionales")
+st.markdown('<div class="pukaray-subcard">Genere reportes Word diferenciados por estudiantes, funcionarios o colegio.</div>', unsafe_allow_html=True)
 
 df_historial = cargar_historial_dataframe()
 
@@ -1335,6 +1451,7 @@ else:
 
 st.divider()
 st.header("Respaldos institucionales")
+st.markdown('<div class="pukaray-subcard">Cree y descargue respaldos de la base de datos institucional.</div>', unsafe_allow_html=True)
 
 if st.button("Crear respaldo de base de datos"):
     respaldo = crear_respaldo()
