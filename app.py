@@ -189,6 +189,75 @@ def seleccionar_plantilla(tipo_registro):
     return TEMPLATE_FUNCIONARIO
 
 
+def detectar_acuerdos_inteligentes(texto, tipo_registro, gravedad):
+    texto_base = normalizar_clave(texto).replace("_", " ")
+    acuerdos_extra = []
+
+    def contiene(*palabras):
+        return any(p in texto_base for p in palabras)
+
+    if contiene("golpe", "pega", "pego", "agresion", "agrede", "empuja", "zancadilla", "patada"):
+        acuerdos_extra += [
+            "Se acuerda promover una acción reparatoria proporcional al daño causado, resguardando la dignidad de las personas involucradas.",
+            "Se realizará seguimiento conductual para verificar que no exista reiteración de acciones físicas o de riesgo.",
+        ]
+
+    if contiene("insulto", "garabato", "ofensa", "amenaza", "amenazo", "humilla", "hiriente"):
+        acuerdos_extra += [
+            "Se acuerda reforzar el uso de lenguaje respetuoso y estrategias de comunicación adecuadas.",
+            "Se orienta a evitar respuestas impulsivas, amenazas o verbalizaciones que puedan afectar la convivencia escolar.",
+        ]
+
+    if contiene("burla", "burlas", "apodo", "sobrenombre", "ridiculiza", "molesta"):
+        acuerdos_extra += [
+            "Se acuerda trabajar el buen trato, la empatía y el reconocimiento del impacto que generan las burlas en otros integrantes de la comunidad.",
+            "Se realizará seguimiento preventivo para evitar nuevas situaciones de menoscabo o trato despectivo.",
+        ]
+
+    if contiene("desregulacion", "crisis", "ansiedad", "llanto", "emocional", "impulsivo", "impulsividad"):
+        acuerdos_extra += [
+            "Se acuerda fortalecer estrategias de autorregulación emocional y solicitud oportuna de apoyo adulto.",
+            "Se evaluará la pertinencia de acompañamiento socioemocional o coordinación con profesionales de apoyo.",
+        ]
+
+    if contiene("interrumpe", "interrupciones", "disruptivo", "disruptiva", "clase", "ruidos", "molesta"):
+        acuerdos_extra += [
+            "Se acuerda reforzar normas de participación en clases y respeto por el proceso de aprendizaje del grupo curso.",
+            "Se realizará monitoreo de la conducta en aula y retroalimentación formativa según evolución.",
+        ]
+
+    if contiene("redes", "whatsapp", "instagram", "mensaje", "foto", "video", "grupo"):
+        acuerdos_extra += [
+            "Se acuerda orientar sobre el uso responsable de redes sociales y medios digitales, resguardando la privacidad y dignidad de terceros.",
+            "Se reforzará que cualquier conflicto digital sea informado oportunamente a adultos responsables del establecimiento.",
+        ]
+
+    if contiene("inasistencia", "atraso", "atrasos", "licencia", "reintegro", "ausencia"):
+        acuerdos_extra += [
+            "Se acuerda mantener seguimiento de asistencia, puntualidad y proceso de reintegro escolar.",
+            "Se coordinarán apoyos pedagógicos o formativos si la situación afecta la continuidad del proceso educativo.",
+        ]
+
+    if contiene("funcionario", "docente", "profesor", "asistente", "laboral", "equipo") or tipo_registro == "Atención funcionario":
+        acuerdos_extra += [
+            "Se acuerda resguardar canales formales de comunicación institucional y mantener registro de los acuerdos adoptados.",
+            "Se reforzará la coordinación interna, el buen trato y el cumplimiento de procedimientos establecidos por el colegio.",
+        ]
+
+    if gravedad in ["ALTA", "GRAVE", "CRÍTICA", "CRITICA"]:
+        acuerdos_extra += [
+            "Debido a la gravedad referencial, se sugiere seguimiento prioritario y revisión del caso por el equipo correspondiente.",
+            "Se deberá dejar registro de nuevas acciones, avances o incumplimientos asociados al caso.",
+        ]
+
+    salida = []
+    for acuerdo in acuerdos_extra:
+        if acuerdo not in salida:
+            salida.append(acuerdo)
+
+    return salida
+
+
 def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, tipo_apoyo, rice):
 
     gravedad = str(rice.get("gravedad", "BAJA")).upper()
@@ -199,8 +268,13 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
 
     categorias_txt = "; ".join([str(x) for x in categorias]) if categorias else "Sin clasificación automática específica."
     normas_txt = "; ".join([str(x) for x in normas]) if normas else "Sin norma específica asociada automáticamente."
-
     requiere_seguimiento_prioritario = gravedad in ["ALTA", "GRAVE", "CRÍTICA", "CRITICA"]
+
+    acuerdos_inteligentes = detectar_acuerdos_inteligentes(
+        antecedentes_mejorados,
+        tipo_registro,
+        gravedad
+    )
 
     if tipo_registro == "Entrevista participante":
 
@@ -300,6 +374,10 @@ def redactar_textos(tipo_registro, antecedentes_mejorados, responsables_apoyo, t
             "2. Se acuerda mantener canales formales de comunicación y coordinación según corresponda.",
             "3. Se reforzarán criterios de buen trato, resguardo institucional y cumplimiento de funciones o protocolos relacionados.",
         ]
+
+    if acuerdos_inteligentes:
+        acuerdos.append("ACUERDOS ESPECÍFICOS SEGÚN ANTECEDENTES DEL CASO:")
+        acuerdos += [f"   • {x}" for x in acuerdos_inteligentes]
 
     if medidas:
         acuerdos.append("MEDIDAS Y ACCIONES SUGERIDAS SEGÚN RICE:")
